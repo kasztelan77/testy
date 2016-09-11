@@ -1,0 +1,19 @@
+extends ../layout
+
+block content
+    h1.
+        Level ID #{level._id}
+    form(action='/levels/#{level._id}/edit',method='post',name='updatelevel',enctype='application/x-www-form-urlencoded')
+        p Level name: 
+            input#inputName(type='text', value='#{level.name}', name='name')
+        p Equivalent levels:
+            input#inputEquivalentLevels(type='text', value='#{level.equivalent_levels}', name='equivalent_levels')
+        p 
+            input(type='hidden',value='PUT',name='_method')
+        p 
+            button#btnSubmit(type='submit').
+                Update
+    p
+    form(action='/levels/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all

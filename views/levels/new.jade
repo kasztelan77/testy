@@ -1,0 +1,12 @@
+extends ../layout
+
+block content
+    h1.
+        #{title}
+    form#formAddLevel(name="addlevel",method="post",action="/levels")
+        p Level name: 
+            input#inputName(type="text", placeholder="ex. grade 2", name="name")
+        p Equivalent levels:
+          input#inputEquivalentLevels(type="text", placeholder="ex. age 7", name="equivalent_levels")   
+        p
+            button#btnSubmit(type="submit") submit

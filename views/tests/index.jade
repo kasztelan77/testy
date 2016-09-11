@@ -1,0 +1,27 @@
+extends ../layout
+
+block content
+    h1.
+         #{title}
+    ul
+        - each test, i in tests
+            li
+                = test.name
+                = ";\t owner: "
+                = test.owner
+                = ";\t questions: "
+                = test.questions
+                p
+                form(action='/tests/#{test._id}',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Show
+                form(action='/tests/#{test._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Edit
+                form(action='/tests/#{test._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                    input(type='hidden',value='DELETE',name='_method')
+                    button(type='submit').
+                        Delete
+    form(action='/tests/new',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Add a new test

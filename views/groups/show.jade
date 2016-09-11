@@ -1,0 +1,12 @@
+extends ../layout
+
+block content
+    h1.
+        Group id #{group._id}
+    p Name: #{group.name}
+    p Owner: #{group.owner}
+    p Users: #{group.users}
+    p
+    form(action='/groups/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all

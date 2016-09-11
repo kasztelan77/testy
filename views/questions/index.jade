@@ -1,0 +1,74 @@
+extends ../layout
+
+block content
+    h1.
+         #{title}
+    h2 Questions waiting for verification:
+    ul
+        - each question, i in unverified
+            li
+                = question.qn
+                = ";\t type: "
+                = question.type
+                = ";\t category: "
+                = question.categories
+                = ";\t level: "
+                = question.levels
+                = ";\t answer: "
+                = question.answers
+                p
+                form(action='/questions/#{question._id}',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Show
+                form(action='/questions/#{question._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Edit
+                form(action='/questions/#{question._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                    input(type='hidden',value='DELETE',name='_method')
+                    button(type='submit').
+                        Delete
+    h2 Accepted questions:
+    ul
+        - each question, i in accepted
+            li
+                = question.qn
+                = ";\t type: "
+                = question.type
+                = ";\t category: "
+                = question.categories
+                = ";\t level: "
+                = question.levels
+                = ";\t answer: "
+                = question.answers
+                p
+                form(action='/questions/#{question._id}',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Show
+                form(action='/questions/#{question._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Edit
+                form(action='/questions/#{question._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                    input(type='hidden',value='DELETE',name='_method')
+                    button(type='submit').
+                        Delete
+    h2 Suspect questions:
+    ul
+        - each question, i in suspect
+            li
+                = question.qn
+                = ";\t reason suspect: "
+                = question.reason_suspect
+                p
+                form(action='/questions/#{question._id}',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Show
+                form(action='/questions/#{question._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Edit
+                form(action='/questions/#{question._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                    input(type='hidden',value='DELETE',name='_method')
+                    button(type='submit').
+                        Delete
+    form(action='/questions/new',method='get',enctype='application/x-www-form-urlencoded')
+                    button(type='submit').
+                        Add a new question

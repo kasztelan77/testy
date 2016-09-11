@@ -1,0 +1,36 @@
+extends ../layout
+
+block content
+    h1.
+        #{title}
+    form#formAddTest(name="addtest",method="post",action="/tests")
+        p Test name: 
+            input#inputName(type="text", placeholder="ex. grade 4 unit 3 test", name="name")
+        p Owner:
+            // this should probably be automatically set to the user who is adding the test
+            // can be reassigned lated to another user if needed
+            input#inputOwner(type="text", placeholder="ex. John Smith", name="owner")
+        p Questions:
+            // this should be combined with below - ie a multiselection from questions with current set automatically highlighted
+            input#inputQuestions(type="text", name="questions")
+        p
+        p Add questions from the drop down list:
+        p Filter by category:
+            if filteredQuestions
+                select(name='questions')
+                    each question in filteredQuestions
+                        option(selected=question.qn == question) #{question}
+        p Filter by level:
+            if filteredQuestions
+                select(name='questions')
+                    each question in filteredQuestions
+                        option(selected=question.qn == question) #{question}
+        p Pick a question:
+        if filteredQuestions
+            select(name='questions')
+                each question in filteredQuestions
+                    option(selected=question.qn == question) #{question}
+        else
+            input#inputQuestions(type="text", name="questions")
+        p
+            button#btnSubmit(type="submit") submit

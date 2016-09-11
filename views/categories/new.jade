@@ -1,0 +1,12 @@
+extends ../layout
+
+block content
+    h1.
+        #{title}
+    form#formAddCategory(name="addcategory",method="post",action="/categories")
+        p Category name: 
+            input#inputName(type="text", placeholder="ex. physics", name="name")
+        p subcategories:
+          input#inputSubcategories(type="text", placeholder="ex. optics", name="subcategories")   
+        p
+            button#btnSubmit(type="submit") submit

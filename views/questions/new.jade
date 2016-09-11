@@ -1,0 +1,34 @@
+extends ../layout
+
+block content
+    h1.
+        #{title}
+    form#formAddQuestion(name="addquestion",method="post",action="/questions")
+        p Question text: 
+            input#inputQn(type="text", placeholder="ex. What is the melting point of aluminum", name="qn")
+        p type:
+            select(name='type')
+                each t in global.ValidQuestionTypes
+                    option(selected=t.name == t) #{t}
+        p categories:
+            select(name='categories')
+                each category in definedCategories
+                    option(selected=category.name == category) #{category}
+        p levels: 
+            select(name='levels')
+                each level in definedLevels
+                    option(selected=level.name == level) #{level}
+        p answers: 
+            input#inputAnswers(type="text", placeholder="ex. 660C", name="answers")
+        p wrong answers: 
+            input#inputAnswers(type="text", placeholder="ex. 100C, 0C, 5000C", name="wrong_answers")
+        p hints: 
+            input#inputHints(type="text", placeholder="ex. ", name="hints")
+        p links to related lessons: 
+            input#inputLinks(type="text", placeholder="ex. ", name="links")
+        p
+            button#btnSubmit(type="submit") submit
+//        p categories:
+//            input#inputCategories(type="text", placeholder="ex. physics", name="categories")
+//        p flags:
+//            input#inputFlags(type="text", name="flags")    

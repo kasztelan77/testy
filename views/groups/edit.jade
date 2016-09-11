@@ -1,0 +1,21 @@
+extends ../layout
+
+block content
+    h1.
+        Group ID #{group._id}
+    form(action='/groups/#{group._id}/edit',method='post',name='updatelevel',enctype='application/x-www-form-urlencoded')
+        p Group name: 
+            input#inputName(type='text', value='#{group.name}', name='name')
+        p Owner:
+            input#inputOwner(type='text', value='#{group.owner}', name='owner')
+        p Users:
+            input#inputUsers(type='text', value='#{group.users}', name='users')
+        p 
+            input(type='hidden',value='PUT',name='_method')
+        p 
+            button#btnSubmit(type='submit').
+                Update
+    p
+    form(action='/groups/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all

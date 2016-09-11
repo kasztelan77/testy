@@ -1,0 +1,11 @@
+extends ../layout
+
+block content
+    h1.
+        Level id #{level._id}
+    p Name: #{level.name}
+    p Equivalent levels: #{level.equivalent_levels}
+    p
+    form(action='/levels/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all

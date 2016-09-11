@@ -1,0 +1,16 @@
+extends ../layout
+
+block content
+    h1.
+        Test id #{test._id}
+    p Name: #{test.name}
+    p Owner: #{test.owner}
+    //hmm, these aren't a property of a test, but of a test assignment
+    //need to think how to model this properly
+    //p Assigned: #{test.assigned}
+    //p Due: #{test.due}
+    p Questions: #{test.questions}
+    p
+    form(action='/tests/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all

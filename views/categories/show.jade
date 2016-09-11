@@ -1,0 +1,11 @@
+extends ../layout
+
+block content
+    h1.
+        Category id #{category._id}
+    p Name: #{category.name}
+    p Subcategories: #{category.subcategories}
+    p
+    form(action='/categories/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all

@@ -1,0 +1,15 @@
+extends ../layout
+
+block content
+    h1.
+        #{title}
+    form#formAddGroup(name="addgroup",method="post",action="/groups")
+        p Group name: 
+            input#inputName(type="text", placeholder="ex. grade 2", name="name")
+        p Owner:
+          input#inputOwner(type="text", placeholder="ex. John Smith", name="owner")
+        p Users:
+          // This should be a selection from users
+          input#inputUsers(type="text", name="Users")
+        p
+            button#btnSubmit(type="submit") submit

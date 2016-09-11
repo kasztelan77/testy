@@ -1,0 +1,41 @@
+extends ../layout
+
+block content
+    h1.
+        Question ID #{question._id}
+    form(action='/questions/#{question._id}/edit',method='post',name='updatequestion',enctype='application/x-www-form-urlencoded')
+        p Question text: 
+            input#inputName(type='text', value='#{question.qn}', name='qn')
+        p type:
+            select(name='type')
+                each t in global.ValidQuestionTypes
+                    option(selected=t.name == t) #{t}
+        p categories:
+            select(name='categories')
+                each category in definedCategories
+                    option(selected=category.name == category) #{category}
+        p levels: 
+            select(name='levels')
+                each level in definedLevels
+                    option(selected=level.name == level) #{level}
+        p Answers: 
+            input#inputAnswer(type='text', value='#{question.answers}', name='answers')
+        p Wrong answers:
+            input#inputWrongAnswers(type='text', value='#{question.wrong_answers}', name='wrong_answers')
+        p Hints:
+            input#inputHints(type='text', value='#{question.hints}', name='hints')
+        p Links to related lessons:
+            input#inputLinks(type='text', value='#{question.links}', name='links')
+        p Flags: 
+            input#inputFlags(type='text', value='#{question.flags}', name='flags')
+        p Reason suspect: 
+            input#inputFlags(type='text', value='#{question.reason_suspect}', name='reason_suspect')
+        p 
+            input(type='hidden',value='PUT',name='_method')
+        p 
+            button#btnSubmit(type='submit').
+                Update
+        p
+        form(action='/questions/',method='get',enctype='application/x-www-form-urlencoded')
+            button(type='submit').
+                Back to all

@@ -1,0 +1,14 @@
+extends ../layout
+
+block content
+    h1.
+        User id #{user._id}
+    p Name: #{user.name}
+    p Email: #{user.email}
+    p Assigned sets: ${user.assigned}
+    p Saved sets: ${user.saved}
+    p Submitted sets: ${user.submitted}
+    p
+    form(action='/users/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all

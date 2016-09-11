@@ -1,0 +1,19 @@
+extends ../layout
+
+block content
+    h1.
+        Category ID #{category._id}
+    form(action='/categories/#{category._id}/edit',method='post',name='updatecategory',enctype='application/x-www-form-urlencoded')
+        p Category text: 
+            input#inputName(type='text', value='#{category.name}', name='name')
+        p Subcategories: 
+            input#inputSubcategories(type='text', value='#{category.subcategories}', name='subcategories')
+        p 
+            input(type='hidden',value='PUT',name='_method')
+        p 
+            button#btnSubmit(type='submit').
+                Update
+    p
+    form(action='/categories/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to all
