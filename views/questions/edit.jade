@@ -20,8 +20,8 @@ block content
                     option(selected=level.name == level) #{level}
         p Answers: 
             input#inputAnswer(type='text', value='#{question.answers}', name='answers')
-        p Wrong answers:
-            input#inputWrongAnswers(type='text', value='#{question.wrong_answers}', name='wrong_answers')
+        p Answers options:
+            input#inputWrongAnswers(type='text', value='#{question.answers_options}', name='answers_options')
         p Hints:
             input#inputHints(type='text', value='#{question.hints}', name='hints')
         p Links to related lessons:

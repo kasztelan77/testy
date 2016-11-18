@@ -1,4 +1,8 @@
 var express = require('express');
+var passport = require('passport');
+var passportLocalStrategy = require('passport-local').Strategy;
+var flash = require('connect-flash');
+var session = require('express-session');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
@@ -12,7 +16,7 @@ var users = require('./model/users');
 var groups = require('./model/groups');
 var tests = require('./model/tests');
 
-var routes = require('./routes/index');
+var mainRoutes = require('./routes/index');
 //var users = require('./routes/users');
 var questionRoutes = require('./routes/questionRoutes');
 var categoryRoutes = require('./routes/categoryRoutes');
@@ -30,13 +34,19 @@ app.set('view engine', 'jade');
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
+app.use(express.static(path.join(__dirname, 'public')));
+//app.use(cookieParser('BroniaSieJeszczeTwierdzeGrenadyAleWGrenadzieZaraza'));
+app.use(cookieParser('JuzWGruzachLezaMaurowPosadyNarodIchDzwigaZelaza'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({ secret: 'JuzWGruzachLezaMaurowPosadyNarodIchDzwigaZelaza'}));
+app.use(passport.initialize());
+app.use(passport.session()); //persistent login session
+app.use(flash());
 
-app.use('/', routes);
+app.use('/', mainRoutes);
 //app.use('/users', users);
+//app.use('/login', loginRoutes);
 app.use('/questions', questionRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/levels', levelRoutes);
@@ -69,11 +79,22 @@ if (app.get('env') === 'development') {
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
+  console.log('in error handler; error: ' + err.message);
   res.render('error', {
     message: err.message,
     error: {}
   });
 });
 
+// passport config
+//passport.use(new passportLocalStrategy(accounts.authenticate()));
+passport.use(new passportLocalStrategy({
+    usernameField: 'email',
+    passwordField: 'password',
+    session: true
+  },
+users.authenticate()));
+passport.serializeUser(users.serializeUser());
+passport.deserializeUser(users.deserializeUser());
 
 module.exports = app;

@@ -10,18 +10,25 @@ block content
                 = ";\t owner: "
                 = group.owner
                 = ";\t users: "
-                = group.users
-                p
+                if (group.users && group.users.length > 0)
+                    = group.users
+                else
+                    = "<None>"
                 form(action='/groups/#{group._id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
-                form(action='/groups/#{group._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
-                    button(type='submit').
-                        Edit
-                form(action='/groups/#{group._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
-                    input(type='hidden',value='DELETE',name='_method')
-                    button(type='submit').
-                        Delete
+                if (user && user.email == group.owner)
+                    form(action='/groups/#{group._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                        button(type='submit').
+                            Edit
+                    form(action='/groups/#{group._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                        input(type='hidden',value='DELETE',name='_method')
+                        button(type='submit').
+                            Delete
+                p
     form(action='/groups/new',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Add a new group
+    p.
+    a(href='/')
+        button.btn.btn-primary(type="button") Main page

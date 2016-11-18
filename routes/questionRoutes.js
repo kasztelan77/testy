@@ -58,7 +58,7 @@ router.route('/')
         var categories = req.body.categories;
         var levels = req.body.levels;
         var answers = req.body.answers;
-        var wrong_answers = req.body.wrong_answers;
+        var answers_options = req.body.answers_options;
         var hints = req.body.hints;
         var links = req.body.links;
   //      var flags = req.body.flags;
@@ -69,7 +69,7 @@ router.route('/')
             categories : categories,
             levels : levels,
             answers : answers,
-            wrong_answers : wrong_answers,
+            answers_options : answers_options,
             hints : hints,
             links : links,
             date_added: Date.now(),
@@ -243,7 +243,7 @@ router.put('/:id/edit', function(req, res) {
     var category = req.body.category;
     var level = req.body.level;
     var answers = req.body.answers;
-    var wrong_answers = req.body.wrong_answers;
+    var answers_options = req.body.answers_options;
     var hints = req.body.hints;
     var links = req.body.links;
     var flags = req.body.flags;
@@ -258,7 +258,7 @@ router.put('/:id/edit', function(req, res) {
                 category : category,
                 level : level,
                 answers : answers,
-                wrong_answers : wrong_answers,
+                answers_options : answers_options,
                 hints : hints,
                 links : links,
                 date_modified: Date.now(),
@@ -294,7 +294,7 @@ router.put('/:id/accept', function(req, res) {
     var category = req.body.category;
     var level = req.body.level;
     var answers = req.body.answers;
-    var wrong_answers = req.body.wrong_answers;
+    var answers_options = req.body.answers_options;
     var hints = req.body.hints;
     var links = req.body.links;
     var flags = "accepted";

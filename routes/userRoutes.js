@@ -30,7 +30,8 @@ router.route('/')
                     html: function(){
                         res.render('users/index', {
                               title: 'All users',
-                              "users" : users
+                              "users" : users,
+                              "user": req.user
                           });
                     },
                     //JSON response will show all users in JSON format
@@ -103,9 +104,42 @@ router.param('id', function(req, res, next, id) {
             //console.log(user);
             // once validation is done save the new item in the req
             req.id = id;
+            req.userById = user;
             // go to the next thing
             next(); 
-        } 
+        }
+    });
+});
+
+// route middleware to validate :inviteid (in users/:id/invitations/:inviteid routes)
+router.param('inviteid', function(req, res, next, inviteid) {
+    //console.log('validating ' + id + ' exists');
+    //find the ID in the Database
+    mongoose.model('Group').findById(inviteid, function (err, group) {
+        //if it isn't found, we are going to repond with 404
+        if (err) {
+            console.log(inviteid + ' was not found');
+            res.status(404)
+            var err = new Error('Not Found');
+            err.status = 404;
+            res.format({
+                html: function(){
+                    next(err);
+                 },
+                json: function(){
+                       res.json({message : err.status  + ' ' + err});
+                 }
+            });
+        //if it is found we continue on
+        } else {
+            //uncomment this next line if you want to see every JSON document response for every GET/PUT/DELETE call
+            //console.log(user);
+            // once validation is done save the new item in the req
+            req.inviteid = inviteid;
+            req.groupByInviteid = group;
+            // go to the next thing
+            next(); 
+        }
     });
 });
 
@@ -220,6 +254,183 @@ router.delete('/:id/edit', function (req, res){
     });
 });
 
+//GET the groups owned by this user
+router.get('/:id/groups', function(req, res) {
+    //search for the groups with owner:user.email within Mongo
+    if (req.user) {
+      console.log('executing query for groups owned by ' + req.user.email);
+      mongoose.model('Group').find({"owner": req.user.email}, function (err, myGroups) {
+          if (err) {
+            console.log("error: " + err);
+          } else {
+            myGroups = myGroups.sort(function(a,b)
+              {return a.name.toLowerCase() > b.name.toLowerCase()});
+            if (!myGroups || myGroups.length <= 0) {
+              myGroups = null;
+            }
+            res.render('users/groups', {
+              title: 'Groups owned by ' + req.user.email,
+              user : req.user,
+              myGroups: myGroups });
+          }
+        });
+    } else {
+      res.render('users/groups', {
+      });
+    }
+});
+
+//GET the group invitations active for this user
+router.get('/:id/invitations', function(req, res) {
+    //should we search for the groups with owner:user.email within Mongo?
+    if (req.user) {
+      res.render('users/invitations', {
+        title: 'Active group invitations for ' + req.userById.email,
+        user : req.user,
+        invites: req.userById.invites });
+    } else {
+      res.render('/', {
+      });
+    }
+});
+
+//GET a single group invitation for this user
+//do we need this???
+router.get('/:id/invitations/:inviteid', function(req, res) {
+    //search for the groups with owner:user.email within Mongo
+    if (req.user /* && authorize_operation() */) {
+      res.render('users/invitation', {
+        title: 'Invitations for ' + req.userById.email + ' to group ' + req.groupById.name + '(' + req.inviteid + ')',
+        user : req.user,
+        invites: req.userById.invites });
+    } else {
+      res.render('/', {
+      });
+    }
+});
+
+//POST on :inviteid/accept to accept group invitation
+router.post('/:id/invitations/:inviteid/accept', function(req, res) {
+    //process invitation
+    //push the user to the list of users in the group
+    //pop the invite from our list of invitations
+    //pop the invite from group's list of active invites
+    //NOTE! the whole operation is not atomic
+    //should have rollback in case of an error, otherwise we can get inconsistencies
+    if (req.groupByInviteid && req.userById && req.user /* && authorize_operation() */) {
+      console.log('processing invite accept for user id ' + req.id + ' by group ' + req.inviteid);
+      //update it
+      req.groupByInviteid.update(
+      {
+        $addToSet: {
+          users : req.userById.email
+        },
+        $pull: {
+          pending_invitations : req.userById.email
+        }
+      }, function (err, groupID) { //what do I get on success?
+        if (err) {
+          res.send("There was a problem updating the information to the database: " + err);
+        } 
+        else {
+          req.userById.update(
+          {
+            $pull: {
+              invites : {
+                id: req.groupByInviteid.id,
+                name: req.groupByInviteid.name
+              }
+            }
+          }, function (err, id) {
+            if (err) {
+              res.send("There was a problem updating the information to the database: " + err);
+            } else {
+              res.redirect('back');
+            } 
+          })
+        }
+      })
+    } else {
+      res.render('/', {
+      });
+    }
+});
+
+//POST on :inviteid/reject to reject group invitation
+router.post('/:id/invitations/:inviteid/reject', function(req, res) {
+    //process invitation
+    //pop the invite from our list of invitations
+    //pop the invite from group's list of active invites
+    if (req.groupByInviteid && req.userById && req.user /* && authorize_operation() */) {
+      console.log('processing invite reject for user id ' + req.id + ' by group ' + req.inviteid);
+      //update it
+      req.groupByInviteid.update(
+      {
+        $addToSet: {
+          rejected_invitations : req.userById.email
+        },
+        $pull: {
+          pending_invitations : req.userById.email
+        }
+      }, function (err, groupID) { //what do I get on success?
+        if (err) {
+          res.send("There was a problem updating the information to the database: " + err);
+        } 
+        else {
+          req.userById.update(
+          {
+            $pull: {
+              invites : {
+                id: req.groupByInviteid.id,
+                name: req.groupByInviteid.name
+              }
+            }
+          }, function (err, id) {
+            if (err) {
+              res.send("There was a problem updating the information to the database: " + err);
+            } else {
+              res.redirect('back');
+            } 
+          })
+        }
+      })
+    } else {
+      res.render('/', {
+      });
+    }
+});
+
+//GET the groups owned by this user which have subscriptions waiting to be accepted
+router.get('/:id/waiting_subscriptions', function(req, res) {
+    //search for the groups with owner:userById.email within Mongo
+    //note that userById is the user referenced by :id, not necessarily req.user
+    //ie someone else, eg admin, can use this endpoint to process these subscriptions
+    //this means we should do authorization on req.user
+    if (req.userById && req.userById.email /*&& authorize(req.user)*/) {
+      mongoose.model('Group').find(
+        {
+          "owner": req.userById.email,
+          "pending_subscriptions": { $exists: true, $gt: [] }
+        }, function (err, waitingSubsGroups) {
+          if (err) {
+            console.log("error: " + err);
+          } else {
+            waitingSubsGroups = waitingSubsGroups.sort(function(a,b)
+                {return a.name.toLowerCase() > b.name.toLowerCase()});
+            if (!waitingSubsGroups || waitingSubsGroups.length <= 0) {
+              waitingSubsGroups = null;
+            }
+            res.render('groups/waiting_subscriptions', {
+              title: 'Groups owned by ' + req.userById.email + ' with waiting subscriptions',
+              user : req.user,
+              waitingSubsGroups: waitingSubsGroups });
+            }
+        });
+    } else {
+      res.render('/', {
+      });
+    }
+});
 
 //GET the tests assigned to the individual user
 router.get('/:id/assigned', function(req, res) {

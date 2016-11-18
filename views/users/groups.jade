@@ -1,0 +1,50 @@
+extends ../layout
+
+block content
+    h1.
+         #{title}
+    ul
+        if (user)
+            - each g in myGroups
+                li
+                    = g.name
+                    br
+                    = "users: "
+                    = g.users
+                    br
+                    = "pending invitations: "
+                    = g.pending_invitations
+                    br
+                    = "rejected invitations: "
+                    = g.rejected_invitations
+                    br
+                    = "pending subscriptions: "
+                    if g.pending_subscriptions
+                        each sub in g.pending_subscriptions
+                            = sub.email
+                            | ,
+                    form(action='/groups/#{g._id}/invite',method='post',enctype='application/x-www-form-urlencoded')
+                        button(type='submit').
+                            Invite users
+                        input#inputInvites(type="text", placeholder="comma separated emails", name="emails")
+                        input(type='hidden',name='groupname',value='#{g.name}')
+                    
+                    form(action='/groups/#{g._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                        button(type='submit').
+                            Edit
+                    form(action='/groups/#{g._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                        input(type='hidden',value='DELETE',name='_method')
+                        button(type='submit').
+                            Delete
+            br
+            br
+            form(action='/groups/new',method='get',enctype='application/x-www-form-urlencoded')
+                            button(type='submit').
+                                Add a new group
+            br
+            a(href='/')
+                button.btn.btn-primary(type="button") Main page
+        else
+            p You must be logged in to manage groups
+            a(href='/')
+                button.btn.btn-primary(type="button") Login

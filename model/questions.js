@@ -5,7 +5,7 @@ var questionSchema = new mongoose.Schema({
 	categories: [String],
 	levels: [String],
 	answers: [String],
-	wrong_answers: [String],
+	answer_options: [String],
 	hints: [String],
 	links: [String],
 	flags: [String],
@@ -19,7 +19,7 @@ var questionSchema = new mongoose.Schema({
 });
 
 global.ValidQuestionTypes = ["multiple choice", "open", "closed", "yesno"];
-global.AllValidFlags = ["unverified", "accepted", "review_requested", "owner_only", "premium"];
-global.SelectableFlags = ["review_requested", "owner_only", "premium"];
+global.AllValidFlags = ["unverified", "accepted", "review_requested", "owner_only", "premium", "public"];
+global.SelectableFlags = ["review_requested", "owner_only", "premium", "public"];
 
 mongoose.model('Question', questionSchema);

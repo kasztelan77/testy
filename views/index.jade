@@ -3,3 +3,81 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
+  if (!user)
+    br
+    br
+    button() Log In with Google
+    br
+    br
+    button() Log In with Facebook
+    br
+    br
+    form(role='form', action="/login",method="post", style='max-width: 300px;')
+      .form-group
+          input.form-control(type='text', name="email", placeholder='Enter email')
+      .form-group
+        input.form-control(type='password', name="password", placeholder='Password')
+      button.btn.btn-default(type='submit') Log in with edu account
+      a(href='/management/resetpwd')
+        button.btn.btn-primary(type="button") Forgot password
+      a(href='/register')
+        button.btn.btn-primary(type="button") Register a new user
+  if (user)
+    if (user.name)
+      p You are currently logged in as #{user.name}
+    else
+      p You are currently logged in as #{user.email}
+    a(href="/users/#{user.id}")
+      button.btn.btn-primary(type="button") View profile
+    br
+    if (myGroups)
+      p My Groups:
+        select(name='id')
+          each group in myGroups
+            a(href="/groups/#{id}")
+              button.btn.btn-primary(type="button") Manage
+            option(selected=group.id == group) #{group.name}
+        a(href="/groups/#{selected}")
+          button.btn.btn-primary(type="button") Manage
+        br
+        a(href="/users/#{user.id}/groups")
+          button.btn.btn-primary(type="button") Manage all my groups
+    if (myGroupsWithSubscriptions)
+      p My Groups with new subscriptions:
+        select(name='id')
+          each group in myGroupsWithSubscriptions
+            a(href="/groups/#{id}")
+              button.btn.btn-primary(type="button") Review new subscriptions
+            option(selected=group.id == group) #{group.name}
+        a(href="/groups/#{selected}/")
+          button.btn.btn-primary(type="button") Review new subscriptions
+        br
+        a(href="/users/#{user.id}/waiting_subscriptions")
+          button.btn.btn-primary(type="button") Manage all new group subscriptions
+    if (user && user.invites && user.invites.length > 0)
+      if (user.invites.length == 1)
+        div You have a new invitation for group '#{user.invites[0].name}'
+        form(action='/users/#{user.id}/invitations/#{user.invites[0].id}/accept',method='post',enctype='application/x-www-form-urlencoded')
+          button(type='submit').
+            Accept
+        form(action='/users/#{user.id}/invitations/#{user.invites[0].id}/reject',method='post',enctype='application/x-www-form-urlencoded')
+          button(type='submit').
+            Reject
+      else
+        div You have multiple new group invitations
+        a(href="/users/#{user.id}/invitations")
+          button.btn.btn-primary(type="button") Review group invitations
+    br
+    br
+    a(href="/users/#{user.id}/groups")
+      button.btn.btn-primary(type="button") My study groups
+    br
+    a(href="/groups/new")
+      button.btn.btn-primary(type="button") Create a study group
+    br
+    a(href="/groups/subscribe")
+      button.btn.btn-primary(type="button") Subscribe to a study group
+    br
+    p
+    a(href="/logout")
+      button.btn.btn-primary(type="button") Logout

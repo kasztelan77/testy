@@ -1,0 +1,28 @@
+extends ../layout
+
+block content
+  if (user)
+    h1.
+         #{title}
+    ul
+        - each group in groups
+            li
+                = "name: "
+                = group.name
+                = ";\t owner: "
+                = group.owner
+                if (group.users && group.users.length > 0)
+                    = ";\t users: "
+                    = group.users
+                form(action='/groups/#{group._id}/subscribtions',method='post',enctype='application/x-www-form-urlencoded')
+                    input(type='hidden',value='POST',name='_method')
+                    button(type='submit').
+                        Subscribe
+            p
+    p.
+    a(href='/')
+        button.btn.btn-primary(type="button") Main page
+  else
+    p You must be logged in to subscribe to a group
+    a(href='/')
+      button.btn.btn-primary(type="button") Login

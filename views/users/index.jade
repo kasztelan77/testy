@@ -4,21 +4,26 @@ block content
     h1.
          #{title}
     ul
-        - each user, i in users
+        - each u, i in users
             li
-                = user.name
-                = ";\t email: "
-                = user.email
-                form(action='/users/#{user._id}',method='get',enctype='application/x-www-form-urlencoded')
+                = u.email
+                if (u.name)
+                    = ";\t name: "
+                    = u.name
+                form(action='/users/#{u._id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
-                form(action='/users/#{user._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
-                    button(type='submit').
-                        Edit
-                form(action='/users/#{user._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
-                    input(type='hidden',value='DELETE',name='_method')
-                    button(type='submit').
-                        Delete
+                if (user && user.email == u.email)
+                    form(action='/users/#{u._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                        button(type='submit').
+                            Edit
+                    form(action='/users/#{u._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                        input(type='hidden',value='DELETE',name='_method')
+                        button(type='submit').
+                            Delete
     form(action='/users/new',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Add a new user
+    form(action='/',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Back to main

@@ -1,0 +1,32 @@
+extends ../layout
+
+block content
+    h1.
+         #{title}
+    ul
+        if (user)
+            if (waitingSubsGroups)
+                - each g in waitingSubsGroups
+                    li
+                        = g.name
+                        br
+                        br
+                        each sub in g.pending_subscriptions
+                            = sub.email
+                            form(action='/groups/#{g._id}/subscriptions/#{sub.id}/accept',method='post',name='acceptsubscription',enctype='application/x-www-form-urlencoded')
+                                input(type='hidden',value='POST',name='_method')
+                                button#btnSubmit(type='submit').
+                                    Accept
+                            form(action='/groups/#{g._id}/subscriptions/#{sub.id}/reject',method='post',name='acceptsubscription',enctype='application/x-www-form-urlencoded')
+                                    input(type='hidden',value='POST',name='_method')
+                                    button#btnSubmit(type='submit').
+                                        Reject
+                        br
+                br
+            br
+            a(href='/')
+                button.btn.btn-primary(type="button") Main page
+        else
+            p You must be logged in to manage groups
+            a(href='/')
+                button.btn.btn-primary(type="button") Login
