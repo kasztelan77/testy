@@ -14,7 +14,7 @@ block content
                 if (group.users && group.users.length > 0)
                     = ";\t users: "
                     = group.users
-                form(action='/groups/#{group._id}/subscribtions',method='post',enctype='application/x-www-form-urlencoded')
+                form(action='/groups/#{group.id}/subscriptions',method='post',enctype='application/x-www-form-urlencoded')
                     input(type='hidden',value='POST',name='_method')
                     button(type='submit').
                         Subscribe

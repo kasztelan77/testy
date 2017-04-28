@@ -8,7 +8,8 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var db = require('./model/db');
+var db = require('./config/db');
+var auth = require('./config/auth');
 var questions = require('./model/questions');
 var categories = require('./model/categories');
 var levels = require('./model/levels');
@@ -24,6 +25,8 @@ var levelRoutes = require('./routes/levelRoutes');
 var userRoutes = require('./routes/userRoutes');
 var groupRoutes = require('./routes/groupRoutes');
 var testRoutes = require('./routes/testRoutes');
+
+require('./config/passport')(passport); // pass passport for configuration
 
 var app = express();
 

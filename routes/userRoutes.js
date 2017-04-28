@@ -2,7 +2,8 @@ var express = require('express'),
     router = express.Router(),
     mongoose = require('mongoose'), //mongo connection
     bodyParser = require('body-parser'), //parses information from POST
-    methodOverride = require('method-override'); //used to manipulate POST
+    methodOverride = require('method-override'), //used to manipulate POST
+    User = require('../model/user'); //neo4j user handle
 
 router.use(bodyParser.urlencoded({ extended: true }))
 router.use(methodOverride(function(req, res){
@@ -14,24 +15,35 @@ router.use(methodOverride(function(req, res){
       }
 }))
 
+var Util = require('util');
 //build the REST operations at the base for users
 //this will be accessible from http://127.0.0.1:3000/users if the default route for / is left unchanged
 router.route('/')
     //GET all users
     .get(function(req, res, next) {
-        //retrieve all users from Monogo
-        mongoose.model('User').find({}, function (err, users) {
+        //retrieve all users from Mongo
+        //mongoose.model('User').find({}, function (err, users) {
+        //retrieve all users from neo4j
+        User.getAll(function(err, users) {
               if (err) {
                   return console.error(err);
               } else {
                   //respond to both HTML and JSON. JSON responses require 'Accept: application/json;' in the Request Header
+                  var loggedUser = null;
+                  if (req.user) {
+                    loggedUser = req.user.properties;
+                  }
+                  //project just the user properties part to remove neo4j-ness
+                  var projectedUserProperties = users.map(function(user) {
+                    return user.user.properties;
+                  });
                   res.format({
                     //HTML response will render the index.jade file in the views/users folder. We are also setting "users" to be an accessible variable in our jade view
                     html: function(){
                         res.render('users/index', {
                               title: 'All users',
-                              "users" : users,
-                              "user": req.user
+                              "users" : projectedUserProperties,
+                              "user": loggedUser
                           });
                     },
                     //JSON response will show all users in JSON format
@@ -81,32 +93,30 @@ router.get('/new', function(req, res) {
 
 // route middleware to validate :id
 router.param('id', function(req, res, next, id) {
-    //console.log('validating ' + id + ' exists');
+    console.log('validating ' + id + ' exists');
     //find the ID in the Database
-    mongoose.model('User').findById(id, function (err, user) {
-        //if it isn't found, we are going to repond with 404
-        if (err) {
-            console.log(id + ' was not found');
-            res.status(404)
-            var err = new Error('Not Found');
-            err.status = 404;
-            res.format({
-                html: function(){
-                    next(err);
-                 },
-                json: function(){
-                       res.json({message : err.status  + ' ' + err});
-                 }
-            });
-        //if it is found we continue on
+    User.getBy('user.id', id, function(err, existingUser) {
+        // if there are any errors, return the error
+        if (err || !existingUser) {
+          console.log(id + ' was not found');
+          res.status(404)
+          var err = new Error('Not Found');
+          err.status = 404;
+          res.format({
+              html: function(){
+                  next(err);
+              },
+              json: function(){
+                     res.json({message : err.status  + ' ' + err});
+               }
+          });
         } else {
-            //uncomment this next line if you want to see every JSON document response for every GET/PUT/DELETE call
-            //console.log(user);
-            // once validation is done save the new item in the req
-            req.id = id;
-            req.userById = user;
-            // go to the next thing
-            next(); 
+          console.log(id + ' was found');
+          //user found; set the validated fields
+          req.id = id;
+          req.userById = existingUser;
+          // go to the next thing
+          next(); 
         }
     });
 });
@@ -115,7 +125,8 @@ router.param('id', function(req, res, next, id) {
 router.param('inviteid', function(req, res, next, inviteid) {
     //console.log('validating ' + id + ' exists');
     //find the ID in the Database
-    mongoose.model('Group').findById(inviteid, function (err, group) {
+    //mongoose.model('Group').findById(inviteid, function (err, group) {
+    Group.getBy('id', inviteid, function(err, existingGroup) {
         //if it isn't found, we are going to repond with 404
         if (err) {
             console.log(inviteid + ' was not found');
@@ -136,7 +147,7 @@ router.param('inviteid', function(req, res, next, inviteid) {
             //console.log(user);
             // once validation is done save the new item in the req
             req.inviteid = inviteid;
-            req.groupByInviteid = group;
+            req.groupByInviteid = existingGroup.properties;
             // go to the next thing
             next(); 
         }
@@ -145,6 +156,18 @@ router.param('inviteid', function(req, res, next, inviteid) {
 
 router.route('/:id')
   .get(function(req, res) {
+    res.format({
+        html: function(){
+            res.render('users/show', {
+              "user" : req.userById.properties
+            });
+        },
+        json: function(){
+            res.json(req.userById.properties);
+        }
+      });
+
+/*
     mongoose.model('User').findById(req.id, function (err, user) {
       if (err) {
         console.log('GET Error: There was a problem retrieving: ' + err);
@@ -162,6 +185,7 @@ router.route('/:id')
         });
       }
     });
+    */
   });
 
 //GET the individual user by Mongo ID
@@ -225,31 +249,24 @@ router.put('/:id/edit', function(req, res) {
 //DELETE a user by ID
 router.delete('/:id/edit', function (req, res){
     //find user by ID
-    mongoose.model('User').findById(req.id, function (err, user) {
+    //mongoose.model('User').findById(req.id, function (err, user) {
+    console.log('DELETE removing ID: ' + req.id);
+    User.detachDeleteBy('id', req.id, function(err, deletedUser) {
         if (err) {
             return console.error(err);
         } else {
-            //remove it from Mongo
-            user.remove(function (err, user) {
-                if (err) {
-                    return console.error(err);
-                } else {
-                    //Returning success messages saying it was deleted
-                    console.log('DELETE removing ID: ' + user._id);
-                    res.format({
-                        //HTML returns us back to the main page, or you can create a success page
-                          html: function(){
-                               res.redirect("/users");
-                         },
-                         //JSON returns the item with the message that is has been deleted
-                        json: function(){
-                               res.json({message : 'deleted',
-                                   item : user
-                               });
-                         }
-                      });
-                }
-            });
+          res.format({
+            //HTML returns us back to the main page, or you can create a success page
+            html: function(){
+              res.redirect("/users");
+            },
+            //JSON returns the item with the message that is has been deleted
+            json: function(){
+              res.json({message : 'deleted',
+                item : user
+              });
+            }
+          });
         }
     });
 });
@@ -258,36 +275,70 @@ router.delete('/:id/edit', function (req, res){
 router.get('/:id/groups', function(req, res) {
     //search for the groups with owner:user.email within Mongo
     if (req.user) {
-      console.log('executing query for groups owned by ' + req.user.email);
-      mongoose.model('Group').find({"owner": req.user.email}, function (err, myGroups) {
+      console.log('executing query for groups owned by ' + req.user.properties.email + ' id: ' + req.id);
+      //User.getBy('user.id', id, function(err, existingUser) {
+      //User.getTargetsOfUserRelationship = function(id, relationship, callback)
+      //mongoose.model('Group').find({"owner": req.user.email}, function (err, myGroups) {
+      User.getTargetsOfUserRelationship(req.id, 'own', function(err, myGroups) {
           if (err) {
             console.log("error: " + err);
-          } else {
-            myGroups = myGroups.sort(function(a,b)
-              {return a.name.toLowerCase() > b.name.toLowerCase()});
+          } else {     
+            //sort and project just the properties part to remove neo4j-ness
+            myGroups = myGroups.map(function(group) {
+              return group.properties;
+            }).sort(function(a,b) {
+              return a.name.toLowerCase() > b.name.toLowerCase();
+            });
             if (!myGroups || myGroups.length <= 0) {
-              myGroups = null;
+              myGroups = [];
             }
             res.render('users/groups', {
-              title: 'Groups owned by ' + req.user.email,
+              title: 'Groups owned by ' + req.user.properties.name,
               user : req.user,
               myGroups: myGroups });
           }
-        });
-    } else {
-      res.render('users/groups', {
       });
+    } else {
+      res.render('users/groups', {});
     }
 });
 
 //GET the group invitations active for this user
 router.get('/:id/invitations', function(req, res) {
     //should we search for the groups with owner:user.email within Mongo?
+    //find the targets of invited_by relationship for this user
+    //form the array of tuples [<group_name, group_id>]
     if (req.user) {
-      res.render('users/invitations', {
-        title: 'Active group invitations for ' + req.userById.email,
-        user : req.user,
-        invites: req.userById.invites });
+      var invites = null;
+      User.getTargetsOfUserRelationship(req.id, 'invited_by', function(err, groups) {
+        if (err) {
+          console.log("error: " + err);
+          res.render('/', {
+          });
+        } else {     
+          //sort and project just the properties part to remove neo4j-ness
+            groups = groups.map(function(group) {
+            return group.properties;
+          }).sort(function(a,b) {
+            return a.name.toLowerCase() > b.name.toLowerCase();
+          });
+          if (!groups || groups.length <= 0) {
+            groups = [];
+          } else {
+            //form array of name,id tuples
+            invites = groups.map(function(group) {
+              return {
+                name: group.name,
+                id: group.id
+              };
+            });
+          }
+          res.render('users/invitations', {
+            title: 'Active group invitations for ' + req.userById.properties.email,
+            user : req.user.properties,
+            invites: invites });
+        }
+      });
     } else {
       res.render('/', {
       });
@@ -319,6 +370,7 @@ router.post('/:id/invitations/:inviteid/accept', function(req, res) {
     //should have rollback in case of an error, otherwise we can get inconsistencies
     if (req.groupByInviteid && req.userById && req.user /* && authorize_operation() */) {
       console.log('processing invite accept for user id ' + req.id + ' by group ' + req.inviteid);
+      /*
       //update it
       req.groupByInviteid.update(
       {
@@ -350,6 +402,14 @@ router.post('/:id/invitations/:inviteid/accept', function(req, res) {
           })
         }
       })
+      */
+      User.addUserGroupRelationship('accept', req.id, req.inviteid, function(err) {
+        if (err) {
+          res.send("There was a problem updating the information to the database: " + err);
+        } else {
+          res.redirect('back');
+        }
+      });
     } else {
       res.render('/', {
       });
@@ -363,6 +423,7 @@ router.post('/:id/invitations/:inviteid/reject', function(req, res) {
     //pop the invite from group's list of active invites
     if (req.groupByInviteid && req.userById && req.user /* && authorize_operation() */) {
       console.log('processing invite reject for user id ' + req.id + ' by group ' + req.inviteid);
+      /*
       //update it
       req.groupByInviteid.update(
       {
@@ -394,6 +455,14 @@ router.post('/:id/invitations/:inviteid/reject', function(req, res) {
           })
         }
       })
+      */
+      User.addUserGroupRelationship('reject', req.id, req.inviteid, function(err) {
+        if (err) {
+          res.send("There was a problem updating the information to the database: " + err);
+        } else {
+          res.redirect('back');
+        }
+      });
     } else {
       res.render('/', {
       });

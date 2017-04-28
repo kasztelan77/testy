@@ -2,8 +2,8 @@ extends ../layout
 
 block content
     h1.
-        User ID #{user._id}
-    form(action='/users/#{user._id}/edit',method='post',name='updateuser',enctype='application/x-www-form-urlencoded')
+        User ID #{user.id}
+    form(action='/users/#{user.id}/edit',method='post',name='updateuser',enctype='application/x-www-form-urlencoded')
         p User name: 
             input#inputName(type='text', value='#{user.name}', name='name')
         p Email:

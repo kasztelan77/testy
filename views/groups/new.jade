@@ -8,7 +8,7 @@ block content
       - The group is created in your ownership, you can reassign it later.
     p - Group name needs not be globally unique, but must be unique for a given user.
     p - You can specify users in the "Users:" field using comma-separeted emails
-    p   The users will be invited to the study groups and will have to accept the invitation
+    p   The users will be invited to the study groups and will have to accept the invitation before they can participate in a group.
     p   You can also leave "Users" blank, and send invitations later
     form#formAddGroup(name="addgroup",method="post",action="/groups")
         p Group name: 
@@ -16,7 +16,7 @@ block content
         p Owner: #{user.email}
         p Users:
           // This should be a selection from users
-          input#inputUsers(type="text", name="Users")
+          input#inputUsers(type="text", name="users")
         p
             button#btnSubmit(type="submit") submit
   else

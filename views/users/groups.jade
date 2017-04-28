@@ -23,16 +23,16 @@ block content
                         each sub in g.pending_subscriptions
                             = sub.email
                             | ,
-                    form(action='/groups/#{g._id}/invite',method='post',enctype='application/x-www-form-urlencoded')
+                    form(action='/groups/#{g.id}/invite',method='post',enctype='application/x-www-form-urlencoded')
                         button(type='submit').
                             Invite users
                         input#inputInvites(type="text", placeholder="comma separated emails", name="emails")
                         input(type='hidden',name='groupname',value='#{g.name}')
                     
-                    form(action='/groups/#{g._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    form(action='/groups/#{g.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
                         button(type='submit').
                             Edit
-                    form(action='/groups/#{g._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                    form(action='/groups/#{g.id}',method='post',enctype='application/x-www-form-urlencoded')
                         input(type='hidden',value='DELETE',name='_method')
                         button(type='submit').
                             Delete

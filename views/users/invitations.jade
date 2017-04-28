@@ -5,17 +5,20 @@ block content
          #{title}
     ul
         if (user)
-            - each invite in invites
-                li
-                    = invite.name
-                    br
-                    form(action='/users/#{user.id}/invitations/#{invite.id}/accept',method='post',enctype='application/x-www-form-urlencoded')
-                        button(type='submit').
-                            Accept
-                    form(action='/users/#{user.id}/invitations/#{invite.id}/reject',method='post',enctype='application/x-www-form-urlencoded')
-                        button(type='submit').
-                            Reject
-                    br
+            if (invites)
+                - each invite in invites
+                    li
+                        = invite.name
+                        br
+                        form(action='/users/#{user.id}/invitations/#{invite.id}/accept',method='post',enctype='application/x-www-form-urlencoded')
+                            button(type='submit').
+                                Accept
+                        form(action='/users/#{user.id}/invitations/#{invite.id}/reject',method='post',enctype='application/x-www-form-urlencoded')
+                            button(type='submit').
+                                Reject
+                        br
+            else
+                p No more invitations
             br
             a(href='/')
                 button.btn.btn-primary(type="button") Main page

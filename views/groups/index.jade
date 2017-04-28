@@ -14,14 +14,14 @@ block content
                     = group.users
                 else
                     = "<None>"
-                form(action='/groups/#{group._id}',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/groups/#{group.id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
                 if (user && user.email == group.owner)
-                    form(action='/groups/#{group._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    form(action='/groups/#{group.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
                         button(type='submit').
                             Edit
-                    form(action='/groups/#{group._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                    form(action='/groups/#{group.id}',method='post',enctype='application/x-www-form-urlencoded')
                         input(type='hidden',value='DELETE',name='_method')
                         button(type='submit').
                             Delete

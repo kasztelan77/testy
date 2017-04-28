@@ -10,14 +10,14 @@ block content
                 if (u.name)
                     = ";\t name: "
                     = u.name
-                form(action='/users/#{u._id}',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/users/#{u.id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
                 if (user && user.email == u.email)
-                    form(action='/users/#{u._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    form(action='/users/#{u.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
                         button(type='submit').
                             Edit
-                    form(action='/users/#{u._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                    form(action='/users/#{u.id}/edit',method='post',enctype='application/x-www-form-urlencoded')
                         input(type='hidden',value='DELETE',name='_method')
                         button(type='submit').
                             Delete
