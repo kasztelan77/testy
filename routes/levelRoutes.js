@@ -1,6 +1,7 @@
 var express = require('express'),
     router = express.Router(),
-    mongoose = require('mongoose'), //mongo connection
+    Level = require('../model/levels'), //neo4j 'levels' handle
+    //mongoose = require('mongoose'), //mongo connection
     bodyParser = require('body-parser'), //parses information from POST
     methodOverride = require('method-override'); //used to manipulate POST
 
@@ -20,22 +21,27 @@ router.route('/')
     //GET all levels
     .get(function(req, res, next) {
         //retrieve all levels from Monogo
-        mongoose.model('Level').find({}, function (err, levels) {
+        //mongoose.model('Level').find({}, function (err, levels) {
+        Level.getAll(function(err, levels) {
               if (err) {
                   return console.error(err);
               } else {
+                  //project just the properties part to remove neo4j-ness
+                  var projectedLevelProperties = levels.map(function(level) {
+                    return level.level.properties;
+                  });
                   //respond to both HTML and JSON. JSON responses require 'Accept: application/json;' in the Request Header
                   res.format({
                     //HTML response will render the index.jade file in the views/levels folder. We are also setting "levels" to be an accessible variable in our jade view
                     html: function(){
                         res.render('levels/index', {
                               title: 'All Levels',
-                              "levels" : levels
+                              "levels" : projectedLevelProperties
                           });
                     },
                     //JSON response will show all levels in JSON format
                     json: function(){
-                        res.json(levels);
+                        res.json(projectedLevelProperties);
                     }
                 });
               }     
@@ -47,10 +53,13 @@ router.route('/')
         var name = req.body.name;
         var equivalent_levels = req.body.equivalent_levels;
         //call the create function for our database
-        mongoose.model('Level').create({
+        //mongoose.model('Level').create({
+        Level.create(req.id,
+          {
             name : name,
+            id: ShortId.generate(),
             equivalent_levels : equivalent_levels
-        }, function (err, level) {
+          }, function (err, level) {
               if (err) {
                   res.send("There was a problem adding the information to the database.");
               } else {
@@ -82,7 +91,8 @@ router.get('/new', function(req, res) {
 router.param('id', function(req, res, next, id) {
     //console.log('validating ' + id + ' exists');
     //find the ID in the Database
-    mongoose.model('Level').findById(id, function (err, level) {
+    //mongoose.model('Level').findById(id, function (err, level) {
+    Level.getBy('id', id, function(err, existingLevel) {
         //if it isn't found, we are going to repond with 404
         if (err) {
             console.log(id + ' was not found');
@@ -103,6 +113,9 @@ router.param('id', function(req, res, next, id) {
             //console.log(level);
             // once validation is done save the new item in the req
             req.id = id;
+            if (existingLevel != null && existingLevel[0] != null && existingLevel[0].level != null) {
+              req.levelById = existingLevel[0].level.properties;
+            }
             // go to the next thing
             next(); 
         } 
@@ -111,28 +124,25 @@ router.param('id', function(req, res, next, id) {
 
 router.route('/:id')
   .get(function(req, res) {
-    mongoose.model('Level').findById(req.id, function (err, level) {
-      if (err) {
-        console.log('GET Error: There was a problem retrieving: ' + err);
-      } else {
-        console.log('GET Retrieving ID: ' + level._id);
+    //mongoose.model('Level').findById(req.id, function (err, level) {
+    if (req && req.levelById) {
         res.format({
           html: function(){
               res.render('levels/show', {
-                "level" : level
+                "level" : req.levelById
               });
           },
           json: function(){
-              res.json(level);
+              res.json(req.levelById);
           }
         });
       }
     });
-  });
 
 //GET the individual level by Mongo ID
 router.get('/:id/edit', function(req, res) {
     //search for the level within Mongo
+    /*
     mongoose.model('Level').findById(req.id, function (err, level) {
         if (err) {
             console.log('GET Error: There was a problem retrieving: ' + err);
@@ -154,6 +164,23 @@ router.get('/:id/edit', function(req, res) {
             });
         }
     });
+    */
+    console.log('req.levelById: ' + Util.inspect(req.levelById));
+    if (req && req.levelById) {
+      res.format({
+        html: function(){
+          res.render('levels/edit', {
+            "level" : req.levelById
+          });
+        },
+        json: function(){
+          res.json(req.levelById);
+        }
+      });
+    } else {
+      console.log('GET Error: level id ' + req.id + ' was not found');
+      //redirect to some error page, or referrer
+    }
 });
 
 //PUT to update a level by ID
@@ -163,35 +190,72 @@ router.put('/:id/edit', function(req, res) {
     var equivalent_levels = req.body.equivalent_levels;
 
    //find the document by ID
-        mongoose.model('Level').findById(req.id, function (err, level) {
+        //mongoose.model('Level').findById(req.id, function (err, level) {
             //update it
-            level.update({
+            //level.update({
+            Level.update(
+              req.id,
+              {  
                 name : name,
                 equivalent_levels : equivalent_levels
-            }, function (err, levelID) {
-              if (err) {
+              }, function (err, levelID) {
+                if (err) {
                   res.send("There was a problem updating the information to the database: " + err);
-              } 
-              else {
+                } 
+                else {
                       //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
                       res.format({
                           html: function(){
-                               res.redirect("/levels/" + level._id);
+                               res.redirect("/levels/" + req.levelById.id);
                          },
                          //JSON responds showing the updated values
                         json: function(){
-                               res.json(level);
+                               res.json(req.levelById);
                          }
                       });
-               }
-            })
+                }
+        //      })
         });
 });
 
 //DELETE a Level by ID
 router.delete('/:id/edit', function (req, res){
     //find level by ID
-    mongoose.model('Level').findById(req.id, function (err, level) {
+    //mongoose.model('Level').findById(req.id, function (err, level) {
+    //detach delete (delete node along with relationship to/from) question by ID
+    Level.detachDeleteBy('id', req.id, function(err, deletedLevel) {
+      //if it isn't found, we are going to respond with 404
+        if (err) {
+            res.status(404)
+            var err = new Error('Failed to delete level');
+            err.status = 404;
+            res.format({
+                html: function(){
+                    next(err);
+                 },
+                json: function(){
+                    res.json({message : err.status  + ' ' + err});
+                 }
+            });
+        } else {
+          console.log('done delete');
+            res.format({
+              //HTML returns us back to the previous URL, or we can create a success page
+              html: function(){
+                //res.redirect("/user/{req.user.id}/groups");
+                //it would be better if we went back to the referrer, for now this hardcode will do
+                res.redirect('back');
+                //res.redirect("/users/" + req.user.properties.id + '/groups');
+              },
+              //JSON returns the item with the message that is has been deleted
+              json: function(){
+                res.json({message : 'deleted',
+                            item : deletedLevel  //with neo4j deletedLevel is null, rethink the reply here
+                });
+              }
+            }); 
+        }
+      /*
         if (err) {
             return console.error(err);
         } else {
@@ -217,6 +281,7 @@ router.delete('/:id/edit', function (req, res){
                 }
             });
         }
+        */
     });
 });
 

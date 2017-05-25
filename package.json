@@ -27,6 +27,8 @@
     "serve-favicon": "~2.3.0",
     "passport-google-oauth" : "~0.1.5",
     "underscore": "~1.8.3",
-    "shortid": "latest"
+    "shortid": "latest",
+    "when": "latest",
+    "async": "latest"
   }
 }

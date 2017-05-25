@@ -2,8 +2,8 @@ extends ../layout
 
 block content
     h1.
-        Level ID #{level._id}
-    form(action='/levels/#{level._id}/edit',method='post',name='updatelevel',enctype='application/x-www-form-urlencoded')
+        Level ID #{level.id}
+    form(action='/levels/#{level.id}/edit',method='post',name='updatelevel',enctype='application/x-www-form-urlencoded')
         p Level name: 
             input#inputName(type='text', value='#{level.name}', name='name')
         p Equivalent levels:

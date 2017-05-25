@@ -17,13 +17,13 @@ block content
                 = ";\t answer: "
                 = question.answers
                 p
-                form(action='/questions/#{question._id}',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
-                form(action='/questions/#{question._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Edit
-                form(action='/questions/#{question._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}/edit',method='post',enctype='application/x-www-form-urlencoded')
                     input(type='hidden',value='DELETE',name='_method')
                     button(type='submit').
                         Delete
@@ -41,13 +41,13 @@ block content
                 = ";\t answer: "
                 = question.answers
                 p
-                form(action='/questions/#{question._id}',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
-                form(action='/questions/#{question._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Edit
-                form(action='/questions/#{question._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}/edit',method='post',enctype='application/x-www-form-urlencoded')
                     input(type='hidden',value='DELETE',name='_method')
                     button(type='submit').
                         Delete
@@ -59,16 +59,19 @@ block content
                 = ";\t reason suspect: "
                 = question.reason_suspect
                 p
-                form(action='/questions/#{question._id}',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
-                form(action='/questions/#{question._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Edit
-                form(action='/questions/#{question._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                form(action='/questions/#{question.id}/edit',method='post',enctype='application/x-www-form-urlencoded')
                     input(type='hidden',value='DELETE',name='_method')
                     button(type='submit').
                         Delete
     form(action='/questions/new',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Add a new question
+    p.
+    a(href='/')
+        button.btn.btn-primary(type="button") Main page

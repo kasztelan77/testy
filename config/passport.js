@@ -46,7 +46,7 @@ module.exports = function(passport) {
 	function(req, email, password, done) {
 		// asynchronous
 		process.nextTick(function() {
-			User.getBy('user.email', email, function(err, user) {
+			User.getBy('email', email, function(err, user) {
 				// if there are any errors, return the error
 				if (err)
 					return done(err);
@@ -75,7 +75,7 @@ module.exports = function(passport) {
 		//asynchronous
 		process.nextTick(function() {
 			//check if the email address is in use.
-			User.getBy('user.email', email, function(err, existingUser) {
+			User.getBy('email', email, function(err, existingUser) {
 				// if there are any errors, return the error
 				if (err) {
 					return done(err);
@@ -139,7 +139,7 @@ module.exports = function(passport) {
 		process.nextTick(function() {
 			// check if the user is already logged in
 			if (!req.user) {
-				User.getBy('user.facebookId', profile.id, function(err, user) {
+				User.getBy('facebookId', profile.id, function(err, user) {
 					if (err)
 						return done(err);
 
@@ -178,7 +178,7 @@ module.exports = function(passport) {
 			} else {
                 // user already exists and is logged in, we have to link accounts
                 // but check if that facebook is linked already
-                User.getBy('user.facebookId', profile.id, function(err, user) {
+                User.getBy('facebookId', profile.id, function(err, user) {
 					if (err)
 						return done(err);
 
@@ -221,7 +221,7 @@ module.exports = function(passport) {
 		process.nextTick(function() {
 			// check if the user is already logged in
 			if (!req.user) {
-				User.getBy('user.twitterId', profile.id, function(err, user) {
+				User.getBy('twitterId', profile.id, function(err, user) {
 					console.log('twitter user: ' + user);
 					if (err)
 						return done(err);
@@ -261,7 +261,7 @@ module.exports = function(passport) {
 			} else {
 				// user already exists and is logged in, we have to link accounts
 				// but check if tht twitter is already linked
-				User.getBy('user.twitterId', profile.id, function(err, user) {
+				User.getBy('twitterId', profile.id, function(err, user) {
 					if (err)
 						return done(err);
 

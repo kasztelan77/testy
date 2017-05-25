@@ -243,7 +243,7 @@ Group.addGroupUserRelationshipByUserField = function(relation, groupId, field, u
 			//user-[member_of]->group and group-[contains]->user
 			//and delete the 'subscribed' relationship
 			//
-			//would it be useful to keep the original subscription information
+			//would it be useful to keep the original subscription information?
 			var qp = {
 				query: [
 					'MATCH (user:User) -[rel:subscribed]-> (group:Group)',
@@ -328,7 +328,7 @@ Group.getSourcesOfGroupRelationship = function(id, relationship, callback) {
 	var qp = {
 		query: [
 			//'START m=node({userId})',
-			'MATCH (n)-[r:' + relationship + ']-m',
+			'MATCH (n)-[r:' + relationship + ']-(m)',
 			'WHERE m.id = {groupId}',
 			'RETURN n'
 		].join('\n'),
@@ -350,11 +350,39 @@ Group.getSourcesOfGroupRelationship = function(id, relationship, callback) {
 	});
 }
 
+//eg. get users who subscribe to my groups
+Group.getSourcesOfMyGroupsRelationship = function(myid, relationship, callback) {
+	var qp = {
+		query: [
+			//'START m=node({userId})',
+			'MATCH (owner:User)-[own]-(group:Group)',
+			'MATCH (user:User)-[r:' + relationship + ']-(group:Group)',
+			'WHERE owner.id = {ownerId}',
+			'RETURN user'
+		].join('\n'),
+		params: {
+			ownerId: myid
+		}
+	}
+
+	db.cypher(qp, function (err, result) {
+		if (err) {
+			console.log('Group.getSourcesOfMyGroupsRelationship error:' + err);
+			return callback(err);
+		}
+		//project to remove the m-layer and get just the Nodes
+        var projectedResult = result.map(function(item) {
+            return item.n;
+        });
+		callback(null, projectedResult);
+	});
+}
+
 Group.getGroupRelationships = function(id, callback) {
 	var qp = {
 		query: [
 			'START n=node({groupId})',
-			'MATCH n-[r]-(m)',
+			'MATCH n-[r: ' + relationship + ']-(m)',
 			'RETURN n,r,m'
 		].join('\n'),
 		params: {
@@ -368,5 +396,26 @@ Group.getGroupRelationships = function(id, callback) {
 			return callback(err);
 		}
 		callback(null, result);
+	});
+}
+
+Group.hasActiveRelationship = function(id, relationship, callback) {
+	var qp = {
+		query: [
+			'MATCH (group: Group)-[r:subscribed]-(user: User)',
+			'WHERE group.id = {groupId}',
+			'RETURN SIGN(COUNT(r))'
+		].join('\n'),
+		params: {
+			groupId: id
+		}
+	}
+
+	db.cypher(qp, function (err, result) {
+		if (err) {
+			console.log('Group.hasActiveRelationship error for id ' + id + ', relationship ' + relationship + ': ' + err);
+			return callback(err);
+		}
+		callback(null, result[0]['SIGN(COUNT(r))']);
 	});
 }

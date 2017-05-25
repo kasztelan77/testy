@@ -1,0 +1,27 @@
+extends ../layout
+
+block content
+    h1.
+         #{title}
+    ul
+        if (user)
+            if (subscriptions)
+                each sub in subscriptions
+                    = sub.name
+                    form(action='/groups/#{group.id}/subscriptions/#{sub.id}/accept',method='post',name='acceptsubscription',enctype='application/x-www-form-urlencoded')
+                        input(type='hidden',value='POST',name='_method')
+                        button#btnSubmit(type='submit').
+                            Accept
+                    form(action='/groups/#{group.id}/subscriptions/#{sub.id}/reject',method='post',name='acceptsubscription',enctype='application/x-www-form-urlencoded')
+                        input(type='hidden',value='POST',name='_method')
+                        button#btnSubmit(type='submit').
+                            Reject
+                    br
+                br
+            br
+            a(href='/')
+                button.btn.btn-primary(type="button") Main page
+        else
+            p You must be logged in to manage groups
+            a(href='/')
+                button.btn.btn-primary(type="button") Login

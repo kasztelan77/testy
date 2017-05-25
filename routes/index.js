@@ -1,5 +1,6 @@
 var express = require('express');
 var passport = require('passport');
+var async = require('async');
 //var accounts = require('../model/accounts');
 var users = require('../model/users');
 var mongoose = require('mongoose'); //mongo connection
@@ -14,11 +15,11 @@ router.get('/', function(req, res, next) {
 	var myGroupNames = null;
 	console.log('handling get /');
 	if (req.user) {
-/*
-		Group.getBy('group.id', id, function(err, existingGroup) {
+		console.log('have req.user; searching for my groups');
+		User.getTargetsOfUserRelationship(req.user.properties.id, 'own', function(err, myGroups) {
 			// if there are any errors, return the error
-	        if (err || !existingGroup) {
-	          console.log(id + ' was not found');
+	        if (err || !myGroups) {
+	          console.log('No groups owned by id ' + req.user.properties.id + ' were found');
 	          res.status(404)
 	          var err = new Error('Not Found');
 	          err.status = 404;
@@ -31,9 +32,55 @@ router.get('/', function(req, res, next) {
 	               }
 	          });
 	        } else {
-	        }
-	    });
-*/
+	          //sort groups
+	          myGroups = myGroups.map(function(group) {
+	          	{return group.properties}
+	          }).sort(function(a,b)
+	          	{return a.name.toLowerCase() > b.name.toLowerCase()});
+		      if (!myGroups || myGroups.length <= 0) {
+		      	myGroups = null;
+		      }
+		      //now check if any of our groups have subscriptions
+		      var myGroupsWithSubscriptions = [];
+			  async.each(myGroups,
+			  	function(group, next) {
+			  	  Group.hasActiveRelationship(group.id, 'subscribed', function(err, result) {
+			  		if (err) {
+			  			console.log('hasActiveRelationship returned an error for ' + group.id + ':subscribed; err: ' + err);
+			  		} else if (result > 0) {
+			  			myGroupsWithSubscriptions.push(group);
+			  		}
+			  		next();
+			  	  }
+			  	)},
+			    function(err) {
+			  	  if (err) {
+			  		console.log('error: ' + err);
+			  		res.status(404)
+			        var err = new Error('Not Found');
+			        err.status = 404;
+			        res.format({
+			            html: function(){
+			                next(err);
+			            },
+			            json: function(){
+			                res.json({message : err.status  + ' ' + err});
+			            }
+			        });
+			  	  } else {
+			  		if (myGroupsWithSubscriptions.length == 0) {
+					  	myGroupsWithSubscriptions = null;
+					}
+					res.render('index', {
+							title: 'New education',
+							user : req.user.properties,
+							myGroups: myGroups,
+							myGroupsWithSubscriptions: myGroupsWithSubscriptions });
+				  }
+			    }
+			  );
+			}
+		});
 		//pick groups with owner set to curent user's email
 		/*
 		mongoose.model('Group').find({"owner": req.user.properties.email}, function (err, myGroups) {
@@ -64,10 +111,8 @@ router.get('/', function(req, res, next) {
 	        }
 	      });
 	      */
-	    res.render('index', {
-			title: 'New education',
-			user : req.user.properties });
 	} else {
+		console.log('no req.user');
 		//TODO: FIX
 		//this is wrong; we have no req.user here
 		res.render('index', {

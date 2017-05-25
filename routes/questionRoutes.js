@@ -1,5 +1,7 @@
 var express = require('express'),
     router = express.Router(),
+    async = require('async'),
+    Question = require('../model/questions'); //neo4j 'questions' handle
     mongoose = require('mongoose'), //mongo connection
     bodyParser = require('body-parser'), //parses information from POST
     methodOverride = require('method-override'); //used to manipulate POST
@@ -21,6 +23,7 @@ router.route('/')
     //GET all questions
     .get(function(req, res, next) {
         //retrieve all questions from Monogo
+        /*
         mongoose.model('Question').find({ flags: "unverified"}, function (err, unverified_questions) {
           mongoose.model('Question').find({ flags: "accepted"}, function (err, accepted_questions) {
             //mongoose.model('Question').find({ reason_suspect: { $ne: null } }, function (err, suspect_questions) {
@@ -49,6 +52,84 @@ router.route('/')
             });
           });     
         });
+        */
+        var unverified_questions = [];
+        var accepted_questions = [];
+        var suspect_questions = [];
+        async.parallel( [
+          function(callback) {
+            Question.getBy('flags', 'unverified', function(err, results) {
+              if (err) {
+                console.error(err);
+                callback(err);
+                return;
+              } else {
+                if (results != null) {
+                  unverified_questions = results.map(function(result) {
+                    return result.question.properties;
+                  });
+                }
+                callback();
+              }
+            });
+          },
+          function(callback) {
+            Question.getBy('flags', 'accepted', function(err, results) {
+              if (err) {
+                console.error(err);
+                callback(err);
+                return;
+              } else {
+                if (results != null) {
+                  accepted_questions = results.map(function(result) {
+                    return result.question.properties;
+                  });;
+                }
+                callback();
+              }
+            });
+          },
+          function(callback) {
+            Question.getBy('flags', 'suspect', function(err, results) {
+              if (err) {
+                console.error(err);
+                callback(err);
+                return;
+              } else {
+                if (results != null) {
+                  suspect_questions = results.map(function(result) {
+                    return result.question.properties;
+                  });;
+                }
+                callback();
+              }
+            });
+          }
+          ],
+          function(err) {
+            if (err) {
+              //should be 500 or something
+              return console.error(err);
+            } else {
+              //respond to both HTML and JSON. JSON responses require 'Accept: application/json;' in the Request Header
+              res.format({
+              //HTML response will render the index.jade file in the views/questions folder. We are also setting "questions" to be an accessible variable in our jade view
+                html: function(){
+                  res.render('questions/index', {
+                    title: 'All Questions',
+                    "unverified" : unverified_questions,
+                    "accepted" : accepted_questions,
+                    "suspect" : suspect_questions,
+                  });
+                },
+                  //JSON response will show all questions in JSON format
+                  json: function(){
+                    res.json(unverified_questions + accepted_questions + suspect_questions);
+                  }
+              })
+            }
+          }
+        );
     })
     //POST a new question
     .post(function(req, res) {
@@ -63,7 +144,10 @@ router.route('/')
         var links = req.body.links;
   //      var flags = req.body.flags;
         //call the create function for our database
-        mongoose.model('Question').create({
+        //mongoose.model('Question').create({
+        Question.create(req.id,
+        {
+            id: ShortId.generate(),
             qn : question,
             type : type,
             categories : categories,
@@ -133,8 +217,9 @@ router.get('/new', function(req, res) {
 router.param('id', function(req, res, next, id) {
     //console.log('validating ' + id + ' exists');
     //find the ID in the Database
-    mongoose.model('Question').findById(id, function (err, question) {
-        //if it isn't found, we are going to repond with 404
+    //mongoose.model('Question').findById(id, function (err, question) {
+    Question.getBy('id', id, function(err, existingQuestion) {
+        //if it isn't found, we are going to respond with 404
         if (err) {
             console.log(id + ' was not found');
             res.status(404)
@@ -154,6 +239,9 @@ router.param('id', function(req, res, next, id) {
             //console.log(question);
             // once validation is done save the new item in the req
             req.id = id;
+            if (existingQuestion != null && existingQuestion[0] != null && existingQuestion[0].question != null) {
+              req.questionById = existingQuestion[0].question.properties;
+            }
             // go to the next thing
             next(); 
         } 
@@ -162,6 +250,7 @@ router.param('id', function(req, res, next, id) {
 
 router.route('/:id')
   .get(function(req, res) {
+    /*
     mongoose.model('Question').findById(req.id, function (err, question) {
       if (err) {
         console.log('GET Error: There was a problem retrieving: ' + err);
@@ -179,6 +268,23 @@ router.route('/:id')
         });
       }
     });
+    */
+    console.log('req.questionById: ' + Util.inspect(req.questionById));
+    if (req && req.questionById) {
+      res.format({
+        html: function(){
+          res.render('questions/show', {
+            "question" : req.questionById
+          });
+        },
+        json: function(){
+          res.json(req.questionById);
+        }
+      });
+    } else {
+      console.log('GET Error: question id ' + req.id + ' was not found');
+      //redirect to some error page, or referrer
+    }
   });
 
 //GET the individual question by Mongo ID
@@ -300,16 +406,22 @@ router.put('/:id/accept', function(req, res) {
     var flags = "accepted";
     var reason_suspect = "";
 
-   //find the document by ID
-        mongoose.model('Question').findById(req.id, function (err, question) {
+    if (!req || !req.user || !req.questionById) {
+      //bail if not logged on, or the question has not been resolved
+    } else {
+        //mongoose.model('Question').findById(req.id, function (err, question) {
             //update it
-            question.update({
+            Question.update(
+              req.id,
+              {
                 flags : flags
-            }, function (err, questionID) {
-              if (err) {
+                //accepted_by: req.id
+              },
+              function (err, question) {
+                if (err) {
                   res.send("There was a problem updating the information to the database: " + err);
-              } 
-              else {
+                } 
+                else {
                       //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
                       res.format({
                           html: function(){
@@ -320,13 +432,96 @@ router.put('/:id/accept', function(req, res) {
                                res.json(question);
                          }
                       });
-               }
-            })
-        });
+                }
+              }
+            );
+      //  });
+      }
+});
+
+router.put('/:id/reject', function(req, res) {
+    // Get our REST or form values. These rely on the "name" attributes
+    var qn = req.body.qn;
+    var type = req.body.type;
+    var category = req.body.category;
+    var level = req.body.level;
+    var answers = req.body.answers;
+    var answers_options = req.body.answers_options;
+    var hints = req.body.hints;
+    var links = req.body.links;
+    var flags = "rejected";
+    var reason_suspect = "";
+
+    if (!req || !req.user || !req.questionById) {
+      //bail if not logged on, or the question has not been resolved
+    } else {
+        //mongoose.model('Question').findById(req.id, function (err, question) {
+            //update it
+            Question.update(
+              req.id,
+              {
+                flags : flags
+                //accepted_by: req.id
+              },
+              function (err, question) {
+                if (err) {
+                  res.send("There was a problem updating the information to the database: " + err);
+                } 
+                else {
+                      //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
+                      res.format({
+                          html: function(){
+                               res.redirect("/questions/");
+                         },
+                         //JSON responds showing the updated values
+                        json: function(){
+                               res.json(question);
+                         }
+                      });
+                }
+              }
+            );
+      //  });
+      }
 });
 
 //DELETE a Question by ID
 router.delete('/:id/edit', function (req, res){
+  //detach delete (delete node along with relationship to/from) question by ID
+  Question.detachDeleteBy('id', req.id, function(err, deletedQuestion) {
+        //if it isn't found, we are going to respond with 404
+        if (err) {
+            res.status(404)
+            var err = new Error('Failed to delete question');
+            err.status = 404;
+            res.format({
+                html: function(){
+                    next(err);
+                 },
+                json: function(){
+                    res.json({message : err.status  + ' ' + err});
+                 }
+            });
+        } else {
+          console.log('done delete');
+            res.format({
+              //HTML returns us back to the previous URL, or we can create a success page
+              html: function(){
+                //res.redirect("/user/{req.user.id}/groups");
+                //it would be better if we went back to the referrer, for now this hardcode will do
+                res.redirect('back');
+                //res.redirect("/users/" + req.user.properties.id + '/groups');
+              },
+              //JSON returns the item with the message that is has been deleted
+              json: function(){
+                res.json({message : 'deleted',
+                            item : deletedQuestion  //with neo4j deletedQuestion is null, rethink the reply here
+                });
+              }
+            }); 
+        } 
+    });
+  /*
     //find question by ID
     mongoose.model('Question').findById(req.id, function (err, question) {
         if (err) {
@@ -355,6 +550,7 @@ router.delete('/:id/edit', function (req, res){
             });
         }
     });
+    */
 });
 
 module.exports = router;

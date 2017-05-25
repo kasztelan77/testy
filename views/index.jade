@@ -22,22 +22,43 @@ block content
         button.btn.btn-primary(type="button") Forgot password
       a(href='/register')
         button.btn.btn-primary(type="button") Register a new user
+    br
+    a(href="/questions")
+      button.btn.btn-primary(type="button") Questions
+    a(href="/categories")
+      button.btn.btn-primary(type="button") Categories
+    a(href="/levels")
+      button.btn.btn-primary(type="button") Levels
+    br
   if (user)
+    a(href="/questions")
+      button.btn.btn-primary(type="button") Questions
+    a(href="/categories")
+      button.btn.btn-primary(type="button") Categories
+    a(href="/levels")
+      button.btn.btn-primary(type="button") Levels
+    br
+    br
     if (user.name)
       p You are currently logged in as #{user.name}
     else
       p You are currently logged in as #{user.email}
     a(href="/users/#{user.id}")
       button.btn.btn-primary(type="button") View profile
+    a(href="/users/#{user.id}/invitations")
+      button.btn.btn-primary(type="button") My invitations
+    a(href="/users/#{user.id}/memberof")
+      button.btn.btn-primary(type="button") Member of
+    br
     br
     if (myGroups)
       p My Groups:
         select(name='id')
           each group in myGroups
-            a(href="/groups/#{id}")
+            a(href="/groups/#{id}/foo")
               button.btn.btn-primary(type="button") Manage
             option(selected=group.id == group) #{group.name}
-        a(href="/groups/#{selected}")
+        a(href="/groups/#{selected}/bar")
           button.btn.btn-primary(type="button") Manage
         br
         a(href="/users/#{user.id}/groups")
@@ -68,7 +89,6 @@ block content
         a(href="/users/#{user.id}/invitations")
           button.btn.btn-primary(type="button") Review group invitations
     br
-    br
     a(href="/users/#{user.id}/groups")
       button.btn.btn-primary(type="button") My study groups
     br
@@ -78,6 +98,11 @@ block content
     a(href="/groups/subscribe")
       button.btn.btn-primary(type="button") Subscribe to a study group
     br
+    br
+    a(href="/users")
+      button.btn.btn-primary(type="button") All users
+    a(href="/groups")
+      button.btn.btn-primary(type="button") All groups
     p
     a(href="/logout")
       button.btn.btn-primary(type="button") Logout

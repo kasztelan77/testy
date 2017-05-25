@@ -1,6 +1,7 @@
 var express = require('express'),
     router = express.Router(),
-    mongoose = require('mongoose'), //mongo connection
+    Category = require('../model/categories'), //neo4j 'levels' handle
+    //mongoose = require('mongoose'), //mongo connection
     bodyParser = require('body-parser'), //parses information from POST
     methodOverride = require('method-override'); //used to manipulate POST
 
@@ -20,22 +21,27 @@ router.route('/')
     //GET all categories
     .get(function(req, res, next) {
         //retrieve all categories from Monogo
-        mongoose.model('Category').find({}, function (err, categories) {
+        //mongoose.model('Category').find({}, function (err, categories) {
+        Category.getAll(function(err, categories) {
               if (err) {
                   return console.error(err);
               } else {
+                  //project just the properties part to remove neo4j-ness
+                  var projectedCategoryProperties = categories.map(function(category) {
+                    return category.category.properties;
+                  });
                   //respond to both HTML and JSON. JSON responses require 'Accept: application/json;' in the Request Header
                   res.format({
                     //HTML response will render the index.jade file in the views/categories folder. We are also setting "categories" to be an accessible variable in our jade view
                     html: function(){
                         res.render('categories/index', {
                               title: 'All Categories',
-                              "categories" : categories
+                              "categories" : projectedCategoryProperties
                           });
                     },
                     //JSON response will show all categries in JSON format
                     json: function(){
-                        res.json(categories);
+                        res.json(projectedCategoryProperties);
                     }
                 });
               }     
@@ -47,10 +53,14 @@ router.route('/')
         var name = req.body.name;
         var subcategories = req.body.subcategories;
         //call the create function for our database
-        mongoose.model('Category').create({
+        //mongoose.model('Category').create({
+        Category.create(
+          req.id,
+          {
             name : name,
+            id: ShortId.generate(),
             subcategories : subcategories
-        }, function (err, category) {
+          }, function (err, category) {
               if (err) {
                   res.send("There was a problem adding the information to the database.");
               } else {
@@ -82,7 +92,8 @@ router.get('/new', function(req, res) {
 router.param('id', function(req, res, next, id) {
     //console.log('validating ' + id + ' exists');
     //find the ID in the Database
-    mongoose.model('Category').findById(id, function (err, category) {
+    //mongoose.model('Category').findById(id, function (err, category) {
+    Category.getBy('id', id, function(err, existingCategory) {
         //if it isn't found, we are going to repond with 404
         if (err) {
             console.log(id + ' was not found');
@@ -103,6 +114,9 @@ router.param('id', function(req, res, next, id) {
             //console.log(category);
             // once validation is done save the new item in the req
             req.id = id;
+            if (existingCategory != null && existingCategory[0] != null && existingCategory[0].category != null) {
+              req.categoryById = existingCategory[0].category.properties;
+            }
             // go to the next thing
             next(); 
         } 
@@ -111,28 +125,44 @@ router.param('id', function(req, res, next, id) {
 
 router.route('/:id')
   .get(function(req, res) {
-    mongoose.model('Category').findById(req.id, function (err, category) {
-      if (err) {
-        console.log('GET Error: There was a problem retrieving: ' + err);
-      } else {
-        console.log('GET Retrieving ID: ' + category._id);
+    if (req && req.categoryById) {
         res.format({
           html: function(){
               res.render('categories/show', {
-                "category" : category
+                "category" : req.categoryById
               });
           },
           json: function(){
-              res.json(category);
+              res.json(req.categoryById);
           }
         });
       }
     });
-  });
+    /*mongoose.model('Category').findById(req.id, function (err, category) {
+    if (req && req.categoryById) {
+      if (err) {
+        console.log('GET Error: There was a problem retrieving: ' + err);
+      } else {
+        console.log('GET Retrieving ID: ' + category.id);
+        res.format({
+          html: function(){
+              res.render('categories/show', {
+                "category" : req.categoryById
+              });
+          },
+          json: function(){
+              res.json(req.categoryById);
+          }
+        });
+      }
+    };
+    });
+    */
 
 //GET the individual category by Mongo ID
 router.get('/:id/edit', function(req, res) {
     //search for the category within Mongo
+    /*
     mongoose.model('Category').findById(req.id, function (err, category) {
         if (err) {
             console.log('GET Error: There was a problem retrieving: ' + err);
@@ -154,6 +184,24 @@ router.get('/:id/edit', function(req, res) {
             });
         }
     });
+    */
+    console.log('req.categoryById: ' + Util.inspect(req.categoryById));
+    if (req && req.categoryById) {
+      res.format({
+        html: function(){
+          res.render('categories/edit', {
+            title: 'Category' + req.categoryById.id,
+            "category" : req.categoryById
+          });
+        },
+        json: function(){
+          res.json(req.categoryById);
+        }
+      });
+    } else {
+      console.log('GET Error: category id ' + req.id + ' was not found');
+      //redirect to some error page, or referrer
+    }
 });
 
 //PUT to update a category by ID
@@ -163,9 +211,11 @@ router.put('/:id/edit', function(req, res) {
     var subcategories = req.body.subcategories;
 
    //find the document by ID
-        mongoose.model('Category').findById(req.id, function (err, category) {
+        //mongoose.model('Category').findById(req.id, function (err, category) {
             //update it
-            category.update({
+        Category.update(
+            req.id,
+            {
                 name : name,
                 subcategories : subcategories
             }, function (err, catID) {
@@ -176,22 +226,23 @@ router.put('/:id/edit', function(req, res) {
                       //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
                       res.format({
                           html: function(){
-                               res.redirect("/categories/" + category._id);
+                               res.redirect("/categories/" + req.categoryById.id);
                          },
                          //JSON responds showing the updated values
                         json: function(){
-                               res.json(category);
+                               res.json(req.categoryById);
                          }
                       });
-               }
-            })
-        });
+              }
+            });
 });
 
 //DELETE a Category by ID
 router.delete('/:id/edit', function (req, res){
     //find category by ID
-    mongoose.model('Category').findById(req.id, function (err, category) {
+    //mongoose.model('Category').findById(req.id, function (err, category) {
+
+        /*
         if (err) {
             return console.error(err);
         } else {
@@ -216,6 +267,39 @@ router.delete('/:id/edit', function (req, res){
                       });
                 }
             });
+        }
+        */
+    //detach delete (delete node along with relationship to/from) question by ID
+    Category.detachDeleteBy('id', req.id, function(err, deletedCategory) {
+      if (err) {
+            res.status(404)
+            var err = new Error('Failed to delete category');
+            err.status = 404;
+            res.format({
+                html: function(){
+                    next(err);
+                 },
+                json: function(){
+                    res.json({message : err.status  + ' ' + err});
+                 }
+            });
+        } else {
+          console.log('done delete');
+            res.format({
+              //HTML returns us back to the previous URL, or we can create a success page
+              html: function(){
+                //res.redirect("/user/{req.user.id}/groups");
+                //it would be better if we went back to the referrer, for now this hardcode will do
+                res.redirect('back');
+                //res.redirect("/users/" + req.user.properties.id + '/groups');
+              },
+              //JSON returns the item with the message that is has been deleted
+              json: function(){
+                res.json({message : 'deleted',
+                            item : deletedCategory  //with neo4j deletedLevel is null, rethink the reply here
+                });
+              }
+            }); 
         }
     });
 });

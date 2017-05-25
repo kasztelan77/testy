@@ -2,7 +2,7 @@ extends ../layout
 
 block content
     h1.
-        Group ID #{group._id}
+        Group ID #{group.id}
     form(action='/groups/#{group.id}/edit',method='post',name='updatelevel',enctype='application/x-www-form-urlencoded')
         p Group name: 
             input#inputName(type='text', value='#{group.name}', name='name')

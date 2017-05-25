@@ -149,6 +149,7 @@ router.route('/')
                   var failed_at_group = [];
                   var failed_not_found = [];
 
+//this probably doesn't work properly as we should wait for the loop to finish beofre returning
                   for (i in emailList) {
                     email = emailList[i].replace(/ /g,'');
                     console.log('user \'' + email + '\'');
@@ -257,6 +258,8 @@ router.get('/subscribe', function(req, res) {
         //project just the user properties part to remove neo4j-ness
         var projectedGroupProperties = groups.map(function(group) {
           return group.group.properties;
+        }).sort(function(a,b) {
+              return a.name.toLowerCase() > b.name.toLowerCase();
         });
         res.format({
           //HTML response will render the index.jade file in the views/groups folder. We are also setting "groups" to be an accessible variable in our jade view
@@ -312,15 +315,15 @@ router.param('id', function(req, res, next, id) {
     });
 });
 
-// route middleware to validate :subid (in groups/:id/subscriptions/:subid routes)
-router.param('subid', function(req, res, next, subid) {
-    console.log('validating user subid ' + subid);
+// route middleware to validate :uid (eg in groups/:id/subscriptions/:uid or other routes)
+router.param('uid', function(req, res, next, uid) {
+    console.log('validating user uid ' + uid);
     //find the ID in the Database
-    //mongoose.model('User').findById(subid, function (err, user) {
-    User.getBy('id', id, function(err, existingUser) {
+    //mongoose.model('User').findById(uid, function (err, user) {
+    User.getBy('id', uid, function(err, existingUser) {
         //if it isn't found, we are going to repond with 404
         if (err) {
-            console.log('User ' + subid + ' was not found');
+            console.log('User ' + id + ' was not found');
             res.status(404)
             var err = new Error('Not Found');
             err.status = 404;
@@ -337,8 +340,8 @@ router.param('subid', function(req, res, next, subid) {
             //uncomment this next line if you want to see every JSON document response for every GET/PUT/DELETE call
             //console.log(existingUser);
             // once validation is done save the new item in the req
-            req.subid = subid;
-            req.userBySubId = existingUser.properties;
+            req.uid = uid;
+            req.userByUId = existingUser.properties;
             // go to the next thing
             next(); 
         } 
@@ -368,19 +371,20 @@ router.route('/:id')
       }
     });
     */
+    console.log('req.groupById: ' + Util.inspect(req.groupById));
     if (req && req.groupById) {
       res.format({
         html: function(){
           res.render('groups/show', {
-            "group" : req.groupById.properties
+            "group" : req.groupById
           });
         },
         json: function(){
-          res.json(req.groupById.properties);
+          res.json(req.groupById);
         }
       });
     } else {
-      console.log('GET Error: goup id ' + req.id + ' was not found');
+      console.log('GET Error: group id ' + req.id + ' was not found');
       //redirect to some error page, or referrer
     }
   });
@@ -417,12 +421,12 @@ router.get('/:id/edit', function(req, res) {
       res.format({
         html: function(){
           res.render('groups/edit', {
-            title: 'group' + req.groupById.properties.id,
-            "group" : req.groupById.properties
+            title: 'group' + req.groupById.id,
+            "group" : req.groupById
           });
         },
         json: function(){
-          res.json(req.groupById.properties);
+          res.json(req.groupById);
         }
       });
     } else {
@@ -463,6 +467,48 @@ router.put('/:id/edit', function(req, res) {
                }
             })
         });
+});
+
+//GET the group subscriptions
+router.get('/:id/subscriptions', function(req, res) {
+    //find the sources of 'subscribed' relationship for this group
+    //form the array of tuples [<group_name, group_id>]
+    if (req.user) {
+      var subscriptions = null;
+      Group.getSourcesOfGroupRelationship(req.id, 'subscribed', function(err, users) {
+        if (err) {
+          console.log("error: " + err);
+          res.render('/', {
+          });
+        } else {     
+          //sort and project just the properties part to remove neo4j-ness
+            users = users.map(function(user) {
+            return user.properties;
+          }).sort(function(a,b) {
+            return a.name.toLowerCase() > b.name.toLowerCase();
+          });
+          if (!users || users.length <= 0) {
+            users = [];
+          } else {
+            //form array of name,id tuples
+            subscriptions = users.map(function(user) {
+              return {
+                name: user.name,
+                id: user.id
+              };
+            });
+          }
+          res.render('groups/subscriptions', {
+            title: 'Active group subscriptions for ' + req.groupById.name,
+            user : req.user.properties,
+            group: req.groupById,
+            subscriptions: subscriptions });
+        }
+      });
+    } else {
+      res.render('/', {
+      });
+    }
 });
 
 //POST to subscribe current user to a group
@@ -531,10 +577,10 @@ router.post('/:id/subscriptions', function(req, res) {
 //and such
 //
 //NOTE!: needs authorization
-router.post('/:id/subscriptions/:subid/accept', function(req, res) {
+router.post('/:id/subscriptions/:uid/accept', function(req, res) {
     var email = null;
-    if (req.userBySubId && req.groupById && req.user /* && authorize_operation() */) {
-      email = req.userBySubId.email;
+    if (req.userByUid && req.groupById && req.user /* && authorize_operation() */) {
+      email = req.userByUid.email;
     }
     
     if (!email) {
@@ -552,7 +598,7 @@ router.post('/:id/subscriptions/:subid/accept', function(req, res) {
           pending_subscriptions :
             {
               email: email,
-              id: req.userBySubId.id
+              id: req.userByUid.id
             }
         }
       }, function (err, groupID) {
@@ -574,7 +620,7 @@ router.post('/:id/subscriptions/:subid/accept', function(req, res) {
         }
       })
       */
-      Group.addGroupUserRelationshipByUserField('accept', req.id, 'id', req.subid, function(err) {
+      Group.addGroupUserRelationshipByUserField('accept', req.id, 'id', req.uid, function(err) {
         if (err) {
           res.send("There was a problem updating the information to the database: " + err);
         } else {
@@ -586,10 +632,10 @@ router.post('/:id/subscriptions/:subid/accept', function(req, res) {
 
 //reject subscription, analogous to accept above
 //NOTE!: needs authorization
-router.post('/:id/subscriptions/:subid/reject', function(req, res) {
+router.post('/:id/subscriptions/:uid/reject', function(req, res) {
     var email = null;
-    if (req.userBySubId && req.groupById && req.user /* && authorize_operation() */) {
-      email = req.userBySubId.email;
+    if (req.userByUid && req.groupById && req.user /* && authorize_operation() */) {
+      email = req.userByUid.email;
     }
 
     if (!email) {
@@ -603,7 +649,7 @@ router.post('/:id/subscriptions/:subid/reject', function(req, res) {
           pending_subscriptions :
           {
             email: email,
-            id: req.userBySubId.id
+            id: req.userByUid.id
           }
         }
       }, function (err, groupID) {
@@ -625,7 +671,7 @@ router.post('/:id/subscriptions/:subid/reject', function(req, res) {
         }
       })
       */
-      Group.addGroupUserRelationshipByUserField('reject', req.id, 'id', req.subid, function(err) {
+      Group.addGroupUserRelationshipByUserField('reject', req.id, 'id', req.uid, function(err) {
         if (err) {
           res.send("There was a problem updating the information to the database: " + err);
         } else {

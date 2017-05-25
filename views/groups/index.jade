@@ -14,18 +14,25 @@ block content
                     = group.users
                 else
                     = "<None>"
-                form(action='/groups/#{group.id}',method='get',enctype='application/x-www-form-urlencoded')
-                    button(type='submit').
-                        Show
                 if (user && user.email == group.owner)
-                    form(action='/groups/#{group.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                    form(action='/groups/#{group.id}',method='get',enctype='application/x-www-form-urlencoded')
                         button(type='submit').
-                            Edit
-                    form(action='/groups/#{group.id}',method='post',enctype='application/x-www-form-urlencoded')
-                        input(type='hidden',value='DELETE',name='_method')
+                            Show
+                        form(action='/groups/#{group.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                            button(type='submit').
+                                Edit
+                            form(action='/groups/#{group.id}',method='post',enctype='application/x-www-form-urlencoded')
+                                input(type='hidden',value='DELETE',name='_method')
+                                button(type='submit').
+                                    Delete
+                else
+                    form(action='/groups/#{group.id}',method='get',enctype='application/x-www-form-urlencoded')
                         button(type='submit').
-                            Delete
-                p
+                            Show
+            form(action='/groups/#{group.id}/subscriptions',method='get',enctype='application/x-www-form-urlencoded')
+                button(type='submit').
+                    Subscriptions
+            p
     form(action='/groups/new',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Add a new group

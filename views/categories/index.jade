@@ -10,16 +10,19 @@ block content
                 = ";\t subcategories: "
                 = category.subcategories
                 p
-                form(action='/categories/#{category._id}',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/categories/#{category.id}',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Show
-                form(action='/categories/#{category._id}/edit',method='get',enctype='application/x-www-form-urlencoded')
+                form(action='/categories/#{category.id}/edit',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Edit
-                form(action='/categories/#{category._id}/edit',method='post',enctype='application/x-www-form-urlencoded')
+                form(action='/categories/#{category.id}/edit',method='post',enctype='application/x-www-form-urlencoded')
                     input(type='hidden',value='DELETE',name='_method')
                     button(type='submit').
                         Delete
     form(action='/categories/new',method='get',enctype='application/x-www-form-urlencoded')
                     button(type='submit').
                         Add a new category
+    p.
+    a(href='/')
+        button.btn.btn-primary(type="button") Main page

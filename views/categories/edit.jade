@@ -2,8 +2,8 @@ extends ../layout
 
 block content
     h1.
-        Category ID #{category._id}
-    form(action='/categories/#{category._id}/edit',method='post',name='updatecategory',enctype='application/x-www-form-urlencoded')
+        Category ID #{category.id}
+    form(action='/categories/#{category.id}/edit',method='post',name='updatecategory',enctype='application/x-www-form-urlencoded')
         p Category text: 
             input#inputName(type='text', value='#{category.name}', name='name')
         p Subcategories: 

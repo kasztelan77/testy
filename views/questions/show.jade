@@ -2,7 +2,7 @@ extends ../layout
 
 block content
     h1.
-        Question id #{question._id}
+        Question id #{question.id}
     p Question text: #{question.qn}
     p Type text: #{question.type}
     p Categories: #{question.categories}
@@ -14,11 +14,18 @@ block content
     p Date question added: #{question.date_added}
     p Date question last modified: #{question.date_modified}
     p Flags: #{question.flags}
-    form(action='/questions/#{question._id}/accept',method='post',name='acceptquestion',enctype='application/x-www-form-urlencoded')
-        p 
-            input(type='hidden',value='PUT',name='_method')
-            button#btnSubmit(type='submit').
-                Accept
+    if (question.flags.indexOf('accepted'))
+        form(action='/questions/#{question.id}/accept',method='post',name='acceptquestion',enctype='application/x-www-form-urlencoded')
+            p 
+                input(type='hidden',value='PUT',name='_method')
+                button#btnSubmit(type='submit').
+                    Accept
+        p
+        form(action='/questions/#{question.id}/reject',method='post',name='acceptquestion',enctype='application/x-www-form-urlencoded')
+            p 
+                input(type='hidden',value='PUT',name='_method')
+                button#btnSubmit(type='submit').
+                    Reject
     p
     form(action='/questions/',method='get',enctype='application/x-www-form-urlencoded')
         button(type='submit').

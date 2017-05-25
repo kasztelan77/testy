@@ -95,7 +95,7 @@ router.get('/new', function(req, res) {
 router.param('id', function(req, res, next, id) {
     console.log('validating ' + id + ' exists');
     //find the ID in the Database
-    User.getBy('user.id', id, function(err, existingUser) {
+    User.getBy('id', id, function(err, existingUser) {
         // if there are any errors, return the error
         if (err || !existingUser) {
           console.log(id + ' was not found');
@@ -121,15 +121,15 @@ router.param('id', function(req, res, next, id) {
     });
 });
 
-// route middleware to validate :inviteid (in users/:id/invitations/:inviteid routes)
-router.param('inviteid', function(req, res, next, inviteid) {
+// route middleware to validate :gid (in users/:id/invitations/:gid or users/:id/memberof/:gid routes)
+router.param('gid', function(req, res, next, gid) {
     //console.log('validating ' + id + ' exists');
     //find the ID in the Database
-    //mongoose.model('Group').findById(inviteid, function (err, group) {
-    Group.getBy('id', inviteid, function(err, existingGroup) {
+    //mongoose.model('Group').findById(gid, function (err, group) {
+    Group.getBy('id', gid, function(err, existingGroup) {
         //if it isn't found, we are going to repond with 404
         if (err) {
-            console.log(inviteid + ' was not found');
+            console.log(gid + ' was not found');
             res.status(404)
             var err = new Error('Not Found');
             err.status = 404;
@@ -146,8 +146,8 @@ router.param('inviteid', function(req, res, next, inviteid) {
             //uncomment this next line if you want to see every JSON document response for every GET/PUT/DELETE call
             //console.log(user);
             // once validation is done save the new item in the req
-            req.inviteid = inviteid;
-            req.groupByInviteid = existingGroup.properties;
+            req.gid = gid;
+            req.groupByGid = existingGroup.properties;
             // go to the next thing
             next(); 
         }
@@ -191,7 +191,8 @@ router.route('/:id')
 //GET the individual user by Mongo ID
 router.get('/:id/edit', function(req, res) {
     //search for the user within Mongo
-    mongoose.model('User').findById(req.id, function (err, user) {
+    //mongoose.model('User').findById(req.id, function (err, user) {
+      User.getBy('id', req.id, function (err, user) {
         if (err) {
             console.log('GET Error: There was a problem retrieving: ' + err);
         } else {
@@ -201,8 +202,8 @@ router.get('/:id/edit', function(req, res) {
                 //HTML response will render the 'edit.jade' template
                 html: function(){
                        res.render('users/edit', {
-                          title: 'user' + user._id,
-                          "user" : user
+                          title: 'user' + user.properties.id,
+                          "user" : user.properties
                       });
                  },
                  //JSON response will return the JSON output
@@ -221,11 +222,15 @@ router.put('/:id/edit', function(req, res) {
     var email = req.body.email;
 
    //find the document by ID
-        mongoose.model('User').findById(req.id, function (err, user) {
+        //mongoose.model('User').findById(req.id, function (err, user) {
+          User.getBy('id', req.id, function (err, user) {
             //update it
-            user.update({
+            User.update({
+              id: req.id,
+              props: {
                 name : name,
                 email : email
+              }
             }, function (err, userID) {
               if (err) {
                   res.send("There was a problem updating the information to the database: " + err);
@@ -234,7 +239,7 @@ router.put('/:id/edit', function(req, res) {
                       //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
                       res.format({
                           html: function(){
-                               res.redirect("/users/" + user._id);
+                               res.redirect("/users/" + user.properties.id);
                          },
                          //JSON responds showing the updated values
                         json: function(){
@@ -263,7 +268,7 @@ router.delete('/:id/edit', function (req, res){
             //JSON returns the item with the message that is has been deleted
             json: function(){
               res.json({message : 'deleted',
-                item : user
+                id : req.id
               });
             }
           });
@@ -294,12 +299,64 @@ router.get('/:id/groups', function(req, res) {
             }
             res.render('users/groups', {
               title: 'Groups owned by ' + req.user.properties.name,
-              user : req.user,
+              user : req.user.properties,
               myGroups: myGroups });
           }
       });
     } else {
       res.render('users/groups', {});
+    }
+});
+
+//GET the groups this user is a member of
+router.get('/:id/memberof', function(req, res) {
+    //search for the groups with owner:user.email within Mongo
+    if (req.user) {
+      console.log('executing query for groups in which user with id: ' + req.id + ' is a member of.');
+      //User.getBy('user.id', id, function(err, existingUser) {
+      //User.getTargetsOfUserRelationship = function(id, relationship, callback)
+      //mongoose.model('Group').find({"owner": req.user.email}, function (err, myGroups) {
+      User.getTargetsOfUserRelationship(req.id, 'member_of', function(err, myGroups) {
+          if (err) {
+            console.log("error: " + err);
+          } else {     
+            //sort and project just the properties part to remove neo4j-ness
+            myGroups = myGroups.map(function(group) {
+              return group.properties;
+            }).sort(function(a,b) {
+              return a.name.toLowerCase() > b.name.toLowerCase();
+            });
+            if (!myGroups || myGroups.length <= 0) {
+              myGroups = [];
+            }
+            res.render('users/memberof', {
+              title: 'Groups in which ' + req.user.properties.name + ' is a member',
+              user : req.user.properties,
+              myGroups: myGroups });
+          }
+      });
+    } else {
+      res.render('users/memberof', {});
+    }
+});
+
+//Unsubscribe from a group by DELETEing on /users/:id/memberof/:gid
+router.delete('/:id/memberof/:gid', function(req, res) {
+    //search for the groups with owner:user.email within Mongo
+    if (req.user) {
+      console.log('Unsubscribing user id ' + req.id + ' from group id' + req.gid);
+      //User.getBy('user.id', id, function(err, existingUser) {
+      //User.getTargetsOfUserRelationship = function(id, relationship, callback)
+      //mongoose.model('Group').find({"owner": req.user.email}, function (err, myGroups) {
+      User.addUserGroupRelationship('unsubscribe', req.id, req.gid, function(err) {
+          if (err) {
+            console.log("error: " + err);
+          } else {
+            res.redirect('/users/' + req.id + '/memberof');
+          }
+      });
+    } else {
+      res.render('users', {});
     }
 });
 
@@ -347,11 +404,11 @@ router.get('/:id/invitations', function(req, res) {
 
 //GET a single group invitation for this user
 //do we need this???
-router.get('/:id/invitations/:inviteid', function(req, res) {
+router.get('/:id/invitations/:gid', function(req, res) {
     //search for the groups with owner:user.email within Mongo
     if (req.user /* && authorize_operation() */) {
       res.render('users/invitation', {
-        title: 'Invitations for ' + req.userById.email + ' to group ' + req.groupById.name + '(' + req.inviteid + ')',
+        title: 'Invitations for ' + req.userById.email + ' to group ' + req.groupById.name + '(' + req.gidgid + ')',
         user : req.user,
         invites: req.userById.invites });
     } else {
@@ -360,19 +417,19 @@ router.get('/:id/invitations/:inviteid', function(req, res) {
     }
 });
 
-//POST on :inviteid/accept to accept group invitation
-router.post('/:id/invitations/:inviteid/accept', function(req, res) {
+//POST on :gid/accept to accept group invitation
+router.post('/:id/invitations/:gid/accept', function(req, res) {
     //process invitation
     //push the user to the list of users in the group
     //pop the invite from our list of invitations
     //pop the invite from group's list of active invites
     //NOTE! the whole operation is not atomic
     //should have rollback in case of an error, otherwise we can get inconsistencies
-    if (req.groupByInviteid && req.userById && req.user /* && authorize_operation() */) {
-      console.log('processing invite accept for user id ' + req.id + ' by group ' + req.inviteid);
+    if (req.groupByGid && req.userById && req.user /* && authorize_operation() */) {
+      console.log('processing invite accept for user id ' + req.id + ' by group ' + req.gid);
       /*
       //update it
-      req.groupByInviteid.update(
+      req.groupByGid.update(
       {
         $addToSet: {
           users : req.userById.email
@@ -389,8 +446,8 @@ router.post('/:id/invitations/:inviteid/accept', function(req, res) {
           {
             $pull: {
               invites : {
-                id: req.groupByInviteid.id,
-                name: req.groupByInviteid.name
+                id: req.groupByGid.id,
+                name: req.groupByGid.name
               }
             }
           }, function (err, id) {
@@ -403,7 +460,7 @@ router.post('/:id/invitations/:inviteid/accept', function(req, res) {
         }
       })
       */
-      User.addUserGroupRelationship('accept', req.id, req.inviteid, function(err) {
+      User.addUserGroupRelationship('accept', req.id, req.gid, function(err) {
         if (err) {
           res.send("There was a problem updating the information to the database: " + err);
         } else {
@@ -416,16 +473,16 @@ router.post('/:id/invitations/:inviteid/accept', function(req, res) {
     }
 });
 
-//POST on :inviteid/reject to reject group invitation
-router.post('/:id/invitations/:inviteid/reject', function(req, res) {
+//POST on :gid/reject to reject group invitation
+router.post('/:id/invitations/:gid/reject', function(req, res) {
     //process invitation
     //pop the invite from our list of invitations
     //pop the invite from group's list of active invites
-    if (req.groupByInviteid && req.userById && req.user /* && authorize_operation() */) {
-      console.log('processing invite reject for user id ' + req.id + ' by group ' + req.inviteid);
+    if (req.groupByGid && req.userById && req.user /* && authorize_operation() */) {
+      console.log('processing invite reject for user id ' + req.id + ' by group ' + req.gid);
       /*
       //update it
-      req.groupByInviteid.update(
+      req.groupByGid.update(
       {
         $addToSet: {
           rejected_invitations : req.userById.email
@@ -442,8 +499,8 @@ router.post('/:id/invitations/:inviteid/reject', function(req, res) {
           {
             $pull: {
               invites : {
-                id: req.groupByInviteid.id,
-                name: req.groupByInviteid.name
+                id: req.groupByGid.id,
+                name: req.groupByGid.name
               }
             }
           }, function (err, id) {
@@ -456,7 +513,7 @@ router.post('/:id/invitations/:inviteid/reject', function(req, res) {
         }
       })
       */
-      User.addUserGroupRelationship('reject', req.id, req.inviteid, function(err) {
+      User.addUserGroupRelationship('reject', req.id, req.gid, function(err) {
         if (err) {
           res.send("There was a problem updating the information to the database: " + err);
         } else {

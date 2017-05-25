@@ -2,10 +2,13 @@ extends ../layout
 
 block content
     h1.
-        Group id #{group._id}
+        Group id #{group.id}
     p Name: #{group.name}
     p Owner: #{group.owner}
     p Users: #{group.users}
+    form(action='/groups/#{group.id}/subscriptions',method='get',enctype='application/x-www-form-urlencoded')
+        button(type='submit').
+            Subscriptions
     p
     form(action='/groups/',method='get',enctype='application/x-www-form-urlencoded')
         button(type='submit').

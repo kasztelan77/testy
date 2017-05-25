@@ -1,0 +1,23 @@
+extends ../layout
+
+block content
+    h1.
+         #{title}
+    ul
+        if (user)
+            - each g in myGroups
+                li
+                    = g.name
+                    br
+                    form(action='/users/#{user.id}/memberof/#{g.id}',method='post',enctype='application/x-www-form-urlencoded')
+                        input(type='hidden',value='DELETE',name='_method')
+                        button(type='submit').
+                            Unsubscribe
+            br
+            br
+            a(href='/')
+                button.btn.btn-primary(type="button") Main page
+        else
+            p You must be logged in to view subscribed groups
+            a(href='/')
+                button.btn.btn-primary(type="button") Login

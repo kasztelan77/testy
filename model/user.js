@@ -59,7 +59,7 @@ User.getBy = function (field, value, callback) {
 	var qp = {
 		query: [
 			'MATCH (user:User)',
-			'WHERE ' + field + ' = {value}',
+			'WHERE user.' + field + ' = {value}',
 			'RETURN user',
 		].join('\n'),
 		params: {
@@ -317,6 +317,8 @@ User.create = function (data, callback) {
 };
 
 User.update = function (data, callback) {
+	//we should remove data.props.id from the passed in data,
+	//as current semantics allow id change, which is likely a very bad thing
 	var qp = {
 		query: [
 			'MATCH (user:User)',
